@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Ana's Word Cascade Game</title>
-    <!-- Viewport for mobile optimization -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
@@ -18,21 +17,19 @@
         }
         h1 {
             margin: 2vw;
-            font-size: 6vw; /* Scaled for mobile screens */
+            font-size: 6vw;
             color: #333;
             text-align: center;
         }
 
-        /* Container adjustments for responsiveness */
         #game-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             margin-bottom: 2vw;
-            width: 90vw; /* Use relative width */
+            width: 90vw;
         }
 
-        /* Top HUD: stack vertically for mobile */
         #hud-container {
             display: flex;
             flex-direction: column;
@@ -91,12 +88,14 @@
             padding: 1vw;
             box-sizing: border-box;
             overflow: hidden;
+            /* We will dynamically update background via JS */
         }
         .pile-row {
             display: flex;
             justify-content: flex-start;
             height: 10vw;
             margin: 0.5vw 0;
+            transition: background-color 0.5s;
         }
         .pile-row.empty {
             background-color: #ccc;
@@ -132,7 +131,6 @@
             align-items: center;
         }
 
-        /* Popup Styles */
         #popup, #startup-popup {
             position: fixed;
             top: 0;
@@ -177,7 +175,6 @@
 
         /* Mobile-specific bin layout for better visibility */
         @media (max-width: 600px) {
-            /* Smaller, square tiles in the pile for a neat 10x10 grid */
             .pile-row .letter {
                 width: 6vw;
                 height: 6vw;
@@ -212,6 +209,15 @@
                 height: auto;
             }
         }
+
+        /* Blinking animation for top row when full */
+        @keyframes blink {
+            0%, 100% { background-color: red; }
+            50% { background-color: #ff5555; }
+        }
+        .blink {
+            animation: blink 1s infinite;
+        }
     </style>
 </head>
 <body>
@@ -225,16 +231,12 @@
     </div>
     <div id="game-container">
         <div id="active-container">
-            <!-- Active Row of Letters -->
             <div id="active-row" class="row"></div>
-            <!-- Feedback Message -->
             <div id="feedback"></div>
-            <!-- Enter Button -->
             <button id="enter-button">Enter</button>
         </div>
     </div>
     <div id="pile-container">
-        <!-- Pile with 10 levels -->
         <div class="pile-row empty"></div>
         <div class="pile-row empty"></div>
         <div class="pile-row empty"></div>
@@ -246,7 +248,7 @@
         <div class="pile-row empty"></div>
         <div class="pile-row empty"></div>
     </div>
-    <!-- Popup for Round Completion -->
+
     <div id="popup">
         <div id="popup-content">
             <h2 id="popup-message"></h2>
@@ -254,14 +256,14 @@
             <div id="countdown"></div>
         </div>
     </div>
-    <!-- Startup Popup -->
+
     <div id="startup-popup">
         <div id="startup-popup-content">
             <h2>Welcome to Ana's Word Cascade Game!</h2>
             <p><strong>How to Play:</strong><br>
             Each <strong>Round</strong> consists of a series of <strong>Tasks</strong>.<br>
             In each Task, you’ll have a limited amount of time to form words from the letters given in the <strong>Active Row</strong>.<br>
-            The longer your word and the rarer the letters, the more points you earn! After time runs out, any unused letters are moved into the <strong>Bin</strong> (pile). Complete all Tasks in a Round to earn a bonus!</p>
+            The longer your word and the rarer the letters, the more points you earn! After time runs out, any unused letters are moved into the <strong>Bin</strong>. Complete all Tasks in a Round to earn a bonus!</p>
 
             <p><strong>Between Rounds:</strong><br>
             You’ll enter a <strong>Bin-Clearing Phase</strong> where you can form words from the letters in the Bin to remove them—at a cost!<br>
@@ -269,7 +271,7 @@
             Clearing the Bin helps keep space free for future Rounds.</p>
 
             <p><strong>Game Over:</strong><br>
-            The game ends if the Bin fills up completely (no more space for new letters).<br>
+            The game ends if the Bin fills up completely.<br>
             Manage your letters wisely and aim for the highest score!</p>
 
             <p>Click "Start" to begin.</p>
@@ -326,7 +328,6 @@
         const calculateWordScore = (word) => {
             let baseScore = word.length * 10;
             let bonusScore = 0;
-
             word.split("").forEach((letter) => {
                 bonusScore += bonusLetters[letter.toUpperCase()] || 0;
             });
@@ -429,6 +430,7 @@
                     }
                 }
             });
+            updatePileAppearance();
             checkGameOver();
         };
 
@@ -451,9 +453,11 @@
             pileRows.forEach((row) => {
                 row.innerHTML = "";
                 row.classList.add("empty");
+                row.classList.remove("blink");
             });
             isBinClearingPhase = false;
             addRow();
+            updatePileAppearance();
             startTimer();
         };
 
@@ -607,16 +611,51 @@
                 }
             });
             selectedTiles = [];
+            updatePileAppearance();
         };
 
         const checkGameOver = () => {
             let isPileFull = pileRows.every(row => row.children.length >= 10);
             if (isPileFull) {
                 clearInterval(timerInterval);
+                // Blink top row
+                pileRows[pileRows.length - 1].classList.add("blink");
                 alert(`Game Over! The bin is full. Final Score: ${score}`);
                 resetGame();
             }
         };
+
+        function updatePileAppearance() {
+            // Calculate how full the bin is
+            let filledRows = pileRows.filter(row => row.children.length > 0).length;
+            let fullness = filledRows / maxPileRows; // 0 to 1
+
+            // Create a gradient from gray to red based on fullness
+            // For example:
+            // At 0% full: light gray
+            // At 50% full: halfway between gray and light red
+            // At 100% full: bright red
+            // We'll pick a simple approach: from #cccccc (gray) at bottom to red (#ff0000) at top
+            // We'll adjust stops dynamically: more full = more red
+            const startColor = "#cccccc";
+            const endColor = "#ff0000";
+            // We can just interpolate the gradient visually by using a multiple stop gradient
+            // A simple approach: The top part of the gradient is red, bottom is gray, and we set a midpoint
+            // The higher the fullness, the more we shift the midpoint toward red.
+
+            const midpointPercent = Math.round(fullness * 100);
+            // Gradient: bottom gray, top red. We'll place a transition stop at midpointPercent.
+            pileContainer.style.background = `linear-gradient(to top, ${startColor} 0%, ${startColor} ${100 - midpointPercent}%, ${endColor} ${100 - midpointPercent}%, ${endColor} 100%)`;
+
+            // Check top row for blinking condition
+            // If top row is filled, we add blink. If not, remove blink.
+            let topRow = pileRows[pileRows.length - 1];
+            if (topRow.children.length > 0) {
+                topRow.classList.add("blink");
+            } else {
+                topRow.classList.remove("blink");
+            }
+        }
 
         startGameButton.addEventListener("click", () => {
             startupPopup.style.display = "none";
