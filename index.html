@@ -53,7 +53,7 @@
             flex-wrap: wrap;
         }
 
-        /* Large playable letters as before */
+        /* Uniform letter size throughout */
         .letter {
             width: 10vw;
             height: 10vw;
@@ -69,18 +69,18 @@
             margin: 1vw;
         }
         .letter.active {
-            background-color: #4caf50; /* Green playable tiles */
+            background-color: #4caf50; /* Green for active row letters */
         }
         .letter.pile {
-            background-color: #888;
+            background-color: #888; /* Gray for pile letters */
         }
         .letter.selected {
             background-color: #ffa500;
         }
 
-        /* Bin settings:
-           - column-reverse so the bin fills from bottom to top.
-           - fixed height with overflow: auto to allow scrolling if needed.
+        /* Bin container:
+           - column-reverse to fill from bottom to top
+           - overflow: auto for scrolling
         */
         #pile-container {
             display: flex;
@@ -91,20 +91,20 @@
             background-color: #eee;
             padding: 1vw;
             box-sizing: border-box;
-            overflow: auto; /* scroll if all rows don't fit at once */
+            overflow: auto;
         }
 
         .pile-row {
             display: flex;
             justify-content: flex-start;
-            height: 10vw; /* same tile size for consistency */
+            height: 10vw; /* same as letter height */
             margin: 0.5vw 0;
         }
         .pile-row.empty {
             background-color: #ccc;
         }
 
-        /* Red border around the top row (which is the last child visually) */
+        /* Red border around the top row (last child visually) */
         .pile-row:last-child {
             border: 2px solid red;
         }
@@ -202,7 +202,7 @@
         </div>
     </div>
     <div id="pile-container">
-        <!-- Bottom row first (due to column-reverse), top row is last and gets a red border -->
+        <!-- Bottom row first due to column-reverse, top row last (red border) -->
         <div class="pile-row empty"></div>
         <div class="pile-row empty"></div>
         <div class="pile-row empty"></div>
@@ -226,7 +226,7 @@
             <h2>Welcome to Ana's Word Cascade Game!</h2>
             <p><strong>How to Play:</strong><br>
             Each <strong>Round</strong> consists of a series of <strong>Tasks</strong>.<br>
-            In each Task, you’ll have a limited amount of time to form words from the letters given in the <strong>Active Row</strong>.<br>
+            In each Task, you’ll have a limited amount of time to form words from the letters in the <strong>Active Row</strong>.<br>
             The longer your word and the rarer the letters, the more points you earn! After time runs out, any unused letters are moved into the <strong>Bin</strong> (pile). Complete all Tasks in a Round to earn a bonus!</p>
 
             <p><strong>Between Rounds:</strong><br>
