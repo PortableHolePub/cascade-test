@@ -86,7 +86,7 @@
             flex-direction: column-reverse;
             border: 2px solid #333;
             width: 90vw;
-            height: 60vh; /* Use viewport height so it fits on screen better */
+            height: 60vh;
             background-color: #eee;
             padding: 1vw;
             box-sizing: border-box;
@@ -277,9 +277,6 @@
         </div>
     </div>
 
-    <!-- Hidden Input for Testing Code -->
-    <input type="text" id="code-input" autocomplete="off">
-
     <script>
         const vowels = ["A", "E", "I", "O", "U"];
         const consonants = "BCDFGHJKLMNPQRSTVWXYZ".split("");
@@ -302,7 +299,6 @@
         const popupMessage = document.getElementById("popup-message");
         const popupScore = document.getElementById("popup-score");
         const countdownDisplay = document.getElementById("countdown");
-        const codeInput = document.getElementById("code-input");
         const startupPopup = document.getElementById("startup-popup");
         const startGameButton = document.getElementById("start-game-button");
 
@@ -319,7 +315,6 @@
         let isBinClearingPhase = false;
         let binClearingTimeLeft = 30;
         let countdownTime = 8;
-        let codeBuffer = "";
 
         const generateTiles = () => {
             return shuffleArray([
@@ -560,8 +555,6 @@
             popup.style.display = "flex";
             setTimeout(() => {
                 popup.style.display = "none";
-                // After showing round completion, next is bin-clearing phase or next round start
-                // The original code goes straight to bin-clearing phase here
                 startBinClearingPhase();
             }, 3000);
         };
@@ -575,6 +568,27 @@
             activeRow.style.display = 'none';
             startTimer();
             pileContainer.addEventListener("click", pileClickHandler);
+        };
+
+        const pileClickHandler = (e) => {
+            if (e.target.classList.contains("letter") && e.target.classList.contains("pile")) {
+                const tile = e.target;
+                const letter = tile.textContent;
+
+                if (tile.classList.contains("selected")) {
+                    if (selectedTiles[selectedTiles.length - 1] === tile) {
+                        currentWord = currentWord.slice(0, -1);
+                        wordDisplay.textContent = currentWord;
+                        tile.classList.remove("selected");
+                        selectedTiles.pop();
+                    }
+                } else {
+                    currentWord += letter;
+                    wordDisplay.textContent = currentWord;
+                    tile.classList.add("selected");
+                    selectedTiles.push(tile);
+                }
+            }
         };
 
         const endBinClearingPhase = () => {
@@ -603,20 +617,6 @@
                 resetGame();
             }
         };
-
-        document.addEventListener('keydown', (e) => {
-            if (isBinClearingPhase) return;
-            codeBuffer += e.key;
-            if (codeBuffer.includes('216570')) {
-                codeBuffer = '';
-                currentTask = totalTasksPerRound - 1;
-                taskDisplay.textContent = currentTask;
-                showFeedback("Testing Code Activated: Advancing to Final Turn", "correct");
-            }
-            if (codeBuffer.length > 10) {
-                codeBuffer = codeBuffer.slice(-10);
-            }
-        });
 
         startGameButton.addEventListener("click", () => {
             startupPopup.style.display = "none";
