@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Ana's Word Cascade Game</title>
+    <!-- Viewport for mobile optimization -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -15,34 +17,61 @@
             background-color: #f4f4f9;
         }
         h1 {
-            margin: 10px;
-            font-size: 24px;
+            margin: 2vw;
+            font-size: 6vw; /* Scaled for mobile screens */
             color: #333;
+            text-align: center;
         }
+
+        /* Container adjustments for responsiveness */
         #game-container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 2vw;
+            width: 90vw; /* Use relative width */
         }
+
+        /* Top HUD: make it flexible and stack vertically on small screens */
+        #hud-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 2vw 0;
+            width: 90vw;
+        }
+        #round-display, #task-display, #timer, #score {
+            font-size: 4vw; /* Larger text for mobile */
+            margin: 1vw 0; 
+        }
+
+        #word-display {
+            font-size: 4vw;
+            margin: 2vw 0;
+        }
+
+        /* Letters and layout */
         .row {
             display: flex;
             justify-content: center;
-            margin-bottom: 5px;
+            margin-bottom: 2vw;
+            flex-wrap: wrap;
         }
+
         .letter {
-            width: 40px;
-            height: 40px;
+            /* Using vw to scale with screen width for bigger tap targets */
+            width: 10vw;
+            height: 10vw;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 5vw;
             font-weight: bold;
             color: white;
-            border-radius: 5px;
+            border-radius: 2vw;
             cursor: pointer;
             user-select: none;
-            margin: 2px;
+            margin: 1vw;
         }
         .letter.active {
             background-color: #4caf50;
@@ -53,43 +82,32 @@
         .letter.selected {
             background-color: #ffa500;
         }
+
         #pile-container {
             display: flex;
             flex-direction: column-reverse;
             border: 2px solid #333;
-            width: 420px;
-            height: 440px;
+            width: 90vw;
+            height: 60vh; /* Use viewport height so it fits on screen better */
             background-color: #eee;
-            padding: 3px;
+            padding: 1vw;
             box-sizing: border-box;
+            overflow: hidden;
         }
         .pile-row {
             display: flex;
             justify-content: flex-start;
-            height: 40px;
-            margin: 1px 0;
+            height: 10vw; /* matches letter size approximately */
+            margin: 0.5vw 0;
         }
         .pile-row.empty {
             background-color: #ccc;
         }
-        #timer, #score, #word-display, #round-display, #task-display {
-            font-size: 16px;
-            margin: 3px;
-        }
-        #enter-button {
-            font-size: 14px;
-            padding: 8px 16px;
-            margin-top: 5px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+
         #feedback {
-            font-size: 14px;
-            margin-top: 5px;
-            height: 18px;
+            font-size: 4vw;
+            margin-top: 2vw;
+            height: 5vw; /* Increased to ensure visibility on mobile */
         }
         #feedback.correct {
             color: green;
@@ -97,12 +115,25 @@
         #feedback.invalid {
             color: red;
         }
+
+        #enter-button {
+            font-size: 4vw;
+            padding: 3vw 6vw;
+            margin-top: 3vw;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3vw;
+            cursor: pointer;
+        }
+
         #active-container {
             position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
+
         /* Popup Styles */
         #popup, #startup-popup {
             position: fixed;
@@ -118,43 +149,76 @@
         }
         #popup-content, #startup-popup-content {
             background-color: white;
-            padding: 20px;
-            border-radius: 5px;
+            padding: 5vw;
+            border-radius: 2vw;
             text-align: center;
-            max-width: 600px;
-            margin: 0 20px;
+            max-width: 90vw;
         }
         #popup h2, #startup-popup h2 {
             margin-top: 0;
+            font-size: 5vw;
+        }
+        #popup p, #startup-popup p {
+            font-size: 4vw;
         }
         #countdown {
-            font-size: 20px;
-            margin-top: 10px;
+            font-size: 6vw;
+            margin-top: 4vw;
         }
-        /* Hidden Input for Testing Code */
-        #code-input {
-            position: absolute;
-            left: -9999px;
-        }
+
         #start-game-button {
-            font-size: 14px;
-            padding: 8px 16px;
-            margin-top: 10px;
+            font-size: 4vw;
+            padding: 3vw 6vw;
+            margin-top: 5vw;
             background-color: #28a745;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 3vw;
             cursor: pointer;
+        }
+
+        /* Media query to handle even smaller screens if needed */
+        @media (max-width: 600px) {
+            /* We already used vw, so it should scale automatically,
+               but you can add further adjustments here if needed. */
+
+            /* Example: Increase the font-size slightly more if it's still too small */
+            h1 {
+                font-size: 7vw;
+            }
+            #enter-button {
+                font-size: 5vw;
+                padding: 4vw 8vw;
+            }
+            .letter {
+                width: 12vw;
+                height: 12vw;
+                font-size: 6vw;
+                margin: 1.5vw;
+            }
+            #timer, #score, #word-display, #round-display, #task-display {
+                font-size: 5vw;
+            }
+            #feedback {
+                font-size: 5vw;
+                height: auto;
+            }
+            #pile-container {
+                width: 95vw;
+            }
         }
     </style>
 </head>
 <body>
     <h1>Ana's Word Cascade Game</h1>
-    <div id="round-display">Round: <span id="current-round">1</span>/10</div>
-    <div id="task-display">Task: <span id="current-task">1</span>/20</div>
-    <div id="timer">Time Left: <span id="time">10</span>s</div>
-    <div id="score">Score: <span id="score-value">0</span></div>
-    <div id="word-display">Word: <span id="current-word"></span></div>
+    <!-- Wrap the top HUD elements in a container for layout control -->
+    <div id="hud-container">
+        <div id="round-display">Round: <span id="current-round">1</span>/10</div>
+        <div id="task-display">Task: <span id="current-task">1</span>/20</div>
+        <div id="timer">Time Left: <span id="time">10</span>s</div>
+        <div id="score">Score: <span id="score-value">0</span></div>
+        <div id="word-display">Word: <span id="current-word"></span></div>
+    </div>
     <div id="game-container">
         <div id="active-container">
             <!-- Active Row of Letters -->
@@ -213,6 +277,9 @@
     <input type="text" id="code-input" autocomplete="off">
 
     <script>
+        /* The JavaScript logic remains the same as previously provided code.
+           The main changes are in the CSS and HTML structure for responsiveness. */
+
         const vowels = ["A", "E", "I", "O", "U"];
         const consonants = "BCDFGHJKLMNPQRSTVWXYZ".split("");
         const bonusLetters = { J: 5, X: 5, Q: 10, Z: 10 };
@@ -220,7 +287,6 @@
         const getRandomElement = (array) => array[Math.floor(Math.random() * array.length)];
         const shuffleArray = (array) => array.sort(() => Math.random() - 0.5);
 
-        // Variables
         const activeRow = document.getElementById("active-row");
         const pileContainer = document.getElementById("pile-container");
         const timeDisplay = document.getElementById("time");
@@ -235,9 +301,7 @@
         const popupMessage = document.getElementById("popup-message");
         const popupScore = document.getElementById("popup-score");
         const countdownDisplay = document.getElementById("countdown");
-        const activeContainer = document.getElementById("active-container");
         const codeInput = document.getElementById("code-input");
-
         const startupPopup = document.getElementById("startup-popup");
         const startGameButton = document.getElementById("start-game-button");
 
@@ -317,7 +381,7 @@
                 endRound();
             } else {
                 taskDisplay.textContent = currentTask;
-                timeLeft = 11 - currentRound; // Decreasing time per round
+                timeLeft = 11 - currentRound;
                 addRow();
                 startTimer();
                 checkGameOver();
@@ -326,7 +390,6 @@
 
         const endRound = () => {
             clearInterval(timerInterval);
-            // Add scaling bonus
             let roundBonus = 40 + (currentRound * 10);
             score += roundBonus;
             updateScore();
@@ -409,7 +472,7 @@
         };
 
         activeRow.addEventListener("click", (e) => {
-            if (isBinClearingPhase) return; 
+            if (isBinClearingPhase) return;
             if (e.target.classList.contains("letter") && e.target.classList.contains("active")) {
                 const tile = e.target;
                 const letter = tile.textContent;
@@ -460,7 +523,6 @@
                 if (isValid) {
                     const wordScore = calculateWordScore(currentWord);
                     if (isBinClearingPhase) {
-                        // Cost is 25% of word score, rounded down
                         const cost = Math.floor(wordScore * 0.25);
                         score -= cost;
                         updateScore();
@@ -566,7 +628,6 @@
             }
         };
 
-        // Testing Feature: Auto-Advance to Final Turn
         document.addEventListener('keydown', (e) => {
             if (isBinClearingPhase) return;
             codeBuffer += e.key;
@@ -581,14 +642,11 @@
             }
         });
 
-        // Start game after user clicks "Start" in startup popup
         startGameButton.addEventListener("click", () => {
             startupPopup.style.display = "none";
-            // Now start the game
             resetGame();
         });
 
-        // Show startup popup on load
         window.addEventListener("load", () => {
             startupPopup.style.display = "flex";
         });
