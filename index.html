@@ -37,10 +37,12 @@
             margin: 2vw 0;
             width: 90vw;
         }
+
         #round-display, #task-display, #timer, #score {
             font-size: 4vw;
             margin: 1vw 0;
         }
+
         #word-display {
             font-size: 4vw;
             margin: 2vw 0;
@@ -53,20 +55,20 @@
             flex-wrap: wrap;
         }
 
-        /* Smaller tiles to fit 10x10 grid on screen */
+        /* Smaller letters so all 10x10 fit */
         .letter {
-            width: 5vw;
-            height: 5vw;
+            width: 3vw;
+            height: 3vw;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3vw;
+            font-size: 2vw;
             font-weight: bold;
             color: white;
             border-radius: 1vw;
             cursor: pointer;
             user-select: none;
-            margin: 0.5vw;
+            margin: 0.5vw; /* Margin around each tile */
         }
         .letter.active {
             background-color: #4caf50;
@@ -78,31 +80,33 @@
             background-color: #ffa500;
         }
 
-        /* All rows visible at once: 
-           10 rows of ~6vw height each (5vw tile + margins) = ~60vw total. 
-           We'll give 70vw height to be safe. */
+        /* The container is now 50vw by 50vw to fit all 10 rows and 10 columns */
+        /* Using column-reverse so bottom row is at the bottom visually */
         #pile-container {
             display: flex;
-            flex-direction: column;
+            flex-direction: column-reverse;
             border: 2px solid #333;
-            width: 70vw;
-            height: 70vw;
+            width: 50vw;
+            height: 50vw;
             background-color: #eee;
             padding: 1vw;
             box-sizing: border-box;
         }
+
         .pile-row {
             display: flex;
             justify-content: flex-start;
-            height: 6vw;
             margin: 0.5vw 0;
+            /* Each row ~3vw tile height + margins = around 4vw tall per row, 10 rows ~40vw total fits in 50vw */
         }
+
         .pile-row.empty {
             background-color: #ccc;
         }
 
-        /* Red border around the top row */
-        .pile-row:first-child {
+        /* Red border around the top row (which is the last child in HTML, 
+           but at the top visually due to column-reverse) */
+        .pile-row:last-child {
             border: 2px solid red;
         }
 
@@ -179,7 +183,7 @@
         }
 
         @media (max-width: 600px) {
-            /* Adjust slightly if needed, but we already use vw units so it should scale */
+            /* The vw units will scale on smaller screens as well */
         }
     </style>
 </head>
@@ -200,7 +204,7 @@
         </div>
     </div>
     <div id="pile-container">
-        <!-- Top row will have a red border (via CSS .pile-row:first-child) -->
+        <!-- With column-reverse, the first element here is at the bottom visually, the last is at the top -->
         <div class="pile-row empty"></div>
         <div class="pile-row empty"></div>
         <div class="pile-row empty"></div>
@@ -341,7 +345,7 @@
                 endRound();
             } else {
                 taskDisplay.textContent = currentTask;
-                timeLeft = 11 - currentRound; 
+                timeLeft = 11 - currentRound;
                 addRow();
                 startTimer();
                 checkGameOver();
@@ -381,7 +385,8 @@
         };
 
         const addToPile = (tiles) => {
-            // Add tiles starting from top row down
+            // With column-reverse, pileRows[0] is visually at the bottom.
+            // We fill from pileRows[0] upward as the bin fills from bottom to top.
             tiles.forEach((tile) => {
                 for (let rowIndex = 0; rowIndex < maxPileRows; rowIndex++) {
                     if (pileRows[rowIndex].children.length < 10) {
