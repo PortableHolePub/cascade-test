@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Ana's Word Cascade Game</title>
+    <!-- Viewport for mobile optimization -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
@@ -17,11 +18,21 @@
         }
         h1 {
             margin: 2vw;
-            font-size: 6vw;
+            font-size: 6vw; /* Scaled for mobile screens */
             color: #333;
             text-align: center;
         }
 
+        /* Container adjustments for responsiveness */
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 2vw;
+            width: 90vw; /* Use relative width */
+        }
+
+        /* Top HUD: stack vertically for mobile */
         #hud-container {
             display: flex;
             flex-direction: column;
@@ -30,20 +41,13 @@
             width: 90vw;
         }
         #round-display, #task-display, #timer, #score {
-            font-size: 4vw;
-            margin: 1vw 0;
+            font-size: 4vw; 
+            margin: 1vw 0; 
         }
+
         #word-display {
             font-size: 4vw;
             margin: 2vw 0;
-        }
-
-        #game-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 2vw;
-            width: 90vw;
         }
 
         .row {
@@ -82,7 +86,7 @@
             flex-direction: column-reverse;
             border: 2px solid #333;
             width: 90vw;
-            height: 60vh;
+            height: 60vh; /* Use viewport height so it fits on screen better */
             background-color: #eee;
             padding: 1vw;
             box-sizing: border-box;
@@ -101,7 +105,7 @@
         #feedback {
             font-size: 4vw;
             margin-top: 2vw;
-            height: 5vw;
+            height: 5vw; 
         }
         #feedback.correct {
             color: green;
@@ -171,7 +175,7 @@
             cursor: pointer;
         }
 
-        /* Mobile-specific overrides for bin visibility */
+        /* Mobile-specific bin layout for better visibility */
         @media (max-width: 600px) {
             /* Smaller, square tiles in the pile for a neat 10x10 grid */
             .pile-row .letter {
@@ -242,7 +246,7 @@
         <div class="pile-row empty"></div>
         <div class="pile-row empty"></div>
     </div>
-    <!-- Popup for Round Completion or Next Round Start -->
+    <!-- Popup for Round Completion -->
     <div id="popup">
         <div id="popup-content">
             <h2 id="popup-message"></h2>
@@ -327,6 +331,7 @@
         const calculateWordScore = (word) => {
             let baseScore = word.length * 10;
             let bonusScore = 0;
+
             word.split("").forEach((letter) => {
                 bonusScore += bonusLetters[letter.toUpperCase()] || 0;
             });
@@ -377,7 +382,7 @@
                 endRound();
             } else {
                 taskDisplay.textContent = currentTask;
-                timeLeft = 11 - currentRound;
+                timeLeft = 11 - currentRound; 
                 addRow();
                 startTimer();
                 checkGameOver();
@@ -389,7 +394,7 @@
             let roundBonus = 40 + (currentRound * 10);
             score += roundBonus;
             updateScore();
-            showPopupWithCountdown(`Congratulations on completing Round ${currentRound}! You earned a bonus of ${roundBonus} points!`);
+            showPopup(`Congratulations on completing Round ${currentRound}! You earned a bonus of ${roundBonus} points!`);
         };
 
         const startNextRound = () => {
@@ -468,7 +473,7 @@
         };
 
         activeRow.addEventListener("click", (e) => {
-            if (isBinClearingPhase) return;
+            if (isBinClearingPhase) return; 
             if (e.target.classList.contains("letter") && e.target.classList.contains("active")) {
                 const tile = e.target;
                 const letter = tile.textContent;
@@ -488,27 +493,6 @@
                 }
             }
         });
-
-        const pileClickHandler = (e) => {
-            if (e.target.classList.contains("letter") && e.target.classList.contains("pile")) {
-                const tile = e.target;
-                const letter = tile.textContent;
-
-                if (tile.classList.contains("selected")) {
-                    if (selectedTiles[selectedTiles.length - 1] === tile) {
-                        currentWord = currentWord.slice(0, -1);
-                        wordDisplay.textContent = currentWord;
-                        tile.classList.remove("selected");
-                        selectedTiles.pop();
-                    }
-                } else {
-                    currentWord += letter;
-                    wordDisplay.textContent = currentWord;
-                    tile.classList.add("selected");
-                    selectedTiles.push(tile);
-                }
-            }
-        };
 
         enterButton.addEventListener("click", async () => {
             if (currentWord.length < 3) {
@@ -569,21 +553,17 @@
             selectedTiles = [];
         };
 
-        const showPopupWithCountdown = (message) => {
+        const showPopup = (message) => {
             popupMessage.textContent = message;
             popupScore.textContent = score;
-            countdownTime = 8;
-            countdownDisplay.textContent = `Bin-clearing phase starts in ${countdownTime} seconds...`;
+            countdownDisplay.textContent = "";
             popup.style.display = "flex";
-            const countdownInterval = setInterval(() => {
-                countdownTime--;
-                countdownDisplay.textContent = `Bin-clearing phase starts in ${countdownTime} seconds...`;
-                if (countdownTime <= 0) {
-                    clearInterval(countdownInterval);
-                    popup.style.display = "none";
-                    startBinClearingPhase();
-                }
-            }, 1000);
+            setTimeout(() => {
+                popup.style.display = "none";
+                // After showing round completion, next is bin-clearing phase or next round start
+                // The original code goes straight to bin-clearing phase here
+                startBinClearingPhase();
+            }, 3000);
         };
 
         const startBinClearingPhase = () => {
@@ -601,27 +581,7 @@
             isBinClearingPhase = false;
             pileContainer.removeEventListener("click", pileClickHandler);
             resetCurrentWord();
-            // Instead of starting next round immediately, show the new countdown:
-            showNextRoundStartCountdown();
-        };
-
-        const showNextRoundStartCountdown = () => {
-            // Show a new 5-second countdown before starting the next round
-            popupMessage.textContent = `Get ready! Round ${currentRound + 1} starting soon!`;
-            popupScore.textContent = score;
-            let startRoundCountdown = 5;
-            countdownDisplay.textContent = `Starting in ${startRoundCountdown}...`;
-            popup.style.display = "flex";
-
-            const interval = setInterval(() => {
-                startRoundCountdown--;
-                countdownDisplay.textContent = `Starting in ${startRoundCountdown}...`;
-                if (startRoundCountdown <= 0) {
-                    clearInterval(interval);
-                    popup.style.display = "none";
-                    startNextRound();
-                }
-            }, 1000);
+            startNextRound();
         };
 
         const removeSelectedTilesFromPile = () => {
