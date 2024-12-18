@@ -23,7 +23,6 @@
             text-align: center;
         }
 
-        /* HUD container now arranged so Round/Task on one line, Time/Score on another line */
         #hud-container {
             display: flex;
             flex-direction: column;
@@ -32,7 +31,6 @@
             width: 90vw;
         }
 
-        /* Create separate lines for Round/Task and Time/Score */
         .hud-line {
             display: flex;
             justify-content: center;
@@ -42,11 +40,11 @@
         }
 
         #round-task-line {
-            /* Example: "Round X/10 | Task Y/20" */
+            /* "Round X/10 | Task Y/20" */
         }
 
         #time-score-line {
-            /* Example: "Time Left: Xs | Score: Y" */
+            /* "Time Left: Xs | Score: Y" */
         }
 
         #word-display {
@@ -69,7 +67,7 @@
             flex-wrap: wrap;
         }
 
-        /* Uniform letter size throughout */
+        /* Uniform letter size */
         .letter {
             width: 10vw;
             height: 10vw;
@@ -86,11 +84,11 @@
         }
 
         .letter.active {
-            background-color: #4caf50; 
+            background-color: #4caf50;
         }
 
         .letter.pile {
-            background-color: #888; 
+            background-color: #888;
         }
 
         .letter.selected {
@@ -120,9 +118,7 @@
             background-color: #ccc;
         }
 
-        .pile-row:last-child {
-            border: 2px solid red;
-        }
+        /* Removed the red border rule */
 
         #feedback {
             font-size: 4vw;
@@ -156,7 +152,7 @@
             align-items: center;
         }
 
-        #popup, #startup-popup {
+        #popup, #startup-popup, #bin-popup {
             position: fixed;
             top: 0;
             left: 0;
@@ -169,7 +165,7 @@
             z-index: 1000;
         }
 
-        #popup-content, #startup-popup-content {
+        #popup-content, #startup-popup-content, #bin-popup-content {
             background-color: white;
             padding: 5vw;
             border-radius: 2vw;
@@ -177,12 +173,12 @@
             max-width: 90vw;
         }
 
-        #popup h2, #startup-popup h2 {
+        #popup h2, #startup-popup h2, #bin-popup h2 {
             margin-top: 0;
             font-size: 5vw;
         }
 
-        #popup p, #startup-popup p {
+        #popup p, #startup-popup p, #bin-popup p {
             font-size: 4vw;
         }
 
@@ -208,23 +204,17 @@
     <h1>Ana's Word Cascade Game</h1>
     <div id="hud-container">
         <div id="round-task-line" class="hud-line">
-            <!-- Round and Task together -->
             Round: <span id="current-round">1</span>/10 &nbsp;|&nbsp; Task: <span id="current-task">1</span>/20
         </div>
         <div id="time-score-line" class="hud-line">
-            <!-- Time Left and Score together -->
             Time Left: <span id="time">10</span>s &nbsp;|&nbsp; Score: <span id="score-value">0</span>
         </div>
-        <!-- Removed the "Word:" label, just show the current word if needed -->
         <div id="word-display"><span id="current-word"></span></div>
     </div>
     <div id="game-container">
         <div id="active-container">
-            <!-- Active Row of Letters -->
             <div id="active-row" class="row"></div>
-            <!-- Feedback Message -->
             <div id="feedback"></div>
-            <!-- Enter Button -->
             <button id="enter-button">Enter</button>
         </div>
     </div>
@@ -240,7 +230,6 @@
         <div class="pile-row empty"></div>
         <div class="pile-row empty"></div>
     </div>
-    <!-- Popup for Round Completion -->
     <div id="popup">
         <div id="popup-content">
             <h2 id="popup-message"></h2>
@@ -248,7 +237,16 @@
             <div id="countdown"></div>
         </div>
     </div>
-    <!-- Startup Popup -->
+
+    <!-- New popup for after bin-clearing phase -->
+    <div id="bin-popup">
+        <div id="bin-popup-content">
+            <h2 id="bin-popup-message"></h2>
+            <p id="bin-popup-details"></p>
+            <div id="bin-popup-countdown"></div>
+        </div>
+    </div>
+
     <div id="startup-popup">
         <div id="startup-popup-content">
             <h2>Welcome to Ana's Word Cascade Game!</h2>
@@ -295,6 +293,12 @@
         const startupPopup = document.getElementById("startup-popup");
         const startGameButton = document.getElementById("start-game-button");
 
+        // New elements for bin popup
+        const binPopup = document.getElementById("bin-popup");
+        const binPopupMessage = document.getElementById("bin-popup-message");
+        const binPopupDetails = document.getElementById("bin-popup-details");
+        const binPopupCountdown = document.getElementById("bin-popup-countdown");
+
         let timeLeft = 10;
         let score = 0;
         let currentWord = "";
@@ -308,6 +312,10 @@
         let isBinClearingPhase = false;
         let binClearingTimeLeft = 30;
         let countdownTime = 8;
+
+        // Track bin clearing changes
+        let binPointsChange = 0; // net points from bin clearing (usually negative)
+        let binLettersRemoved = 0; // how many letters removed during bin clearing phase
 
         const generateTiles = () => {
             return shuffleArray([
@@ -409,7 +417,6 @@
         };
 
         const addToPile = (tiles) => {
-            // column-reverse means pileRows[0] at bottom, fill upwards.
             tiles.forEach((tile) => {
                 for (let rowIndex = 0; rowIndex < maxPileRows; rowIndex++) {
                     if (pileRows[rowIndex].children.length < 10) {
@@ -445,6 +452,8 @@
                 row.classList.add("empty");
             });
             isBinClearingPhase = false;
+            binPointsChange = 0;
+            binLettersRemoved = 0;
             addRow();
             startTimer();
         };
@@ -492,6 +501,8 @@
                     if (isBinClearingPhase) {
                         const cost = Math.floor(wordScore * 0.25);
                         score -= cost;
+                        binPointsChange -= cost; // Track bin clearing points
+                        binLettersRemoved += selectedTiles.length; // Letters removed
                         updateScore();
                         showFeedback(`Word Accepted! -${cost} points`, "correct");
                         removeSelectedTilesFromPile();
@@ -551,6 +562,8 @@
 
         const startBinClearingPhase = () => {
             isBinClearingPhase = true;
+            binPointsChange = 0;
+            binLettersRemoved = 0;
             binClearingTimeLeft = 30;
             timeLeft = binClearingTimeLeft;
             timeDisplay.textContent = timeLeft;
@@ -585,7 +598,7 @@
             isBinClearingPhase = false;
             pileContainer.removeEventListener("click", pileClickHandler);
             resetCurrentWord();
-            startNextRound();
+            showBinClearingResults(); // Show new popup with bin clearing results and countdown
         };
 
         const removeSelectedTilesFromPile = () => {
@@ -607,6 +620,25 @@
                 resetGame();
             }
         };
+
+        function showBinClearingResults() {
+            // Popup after bin clearing
+            binPopupMessage.textContent = "Congratulations!";
+            binPopupDetails.textContent = `You added ${binPointsChange} points and removed ${binLettersRemoved} letters.\nRound ${currentRound+1} starts soon!`;
+            binPopup.style.display = "flex";
+
+            let startRoundCountdown = 5;
+            binPopupCountdown.textContent = `Starting in ${startRoundCountdown}...`;
+            const interval = setInterval(() => {
+                startRoundCountdown--;
+                binPopupCountdown.textContent = `Starting in ${startRoundCountdown}...`;
+                if (startRoundCountdown <= 0) {
+                    clearInterval(interval);
+                    binPopup.style.display = "none";
+                    startNextRound();
+                }
+            }, 1000);
+        }
 
         startGameButton.addEventListener("click", () => {
             startupPopup.style.display = "none";
