@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ana's Word Cascade Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            margin: 10px;
+            font-size: 24px;
+            color: #333;
+        }
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 5px;
+        }
+        .letter {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            user-select: none;
+            margin: 2px;
+        }
+        .letter.active {
+            background-color: #4caf50;
+        }
+        .letter.pile {
+            background-color: #888;
+        }
+        .letter.selected {
+            background-color: #ffa500;
+        }
+        #pile-container {
+            display: flex;
+            flex-direction: column-reverse;
+            border: 2px solid #333;
+            width: 420px;
+            height: 440px;
+            background-color: #eee;
+            padding: 3px;
+            box-sizing: border-box;
+        }
+        .pile-row {
+            display: flex;
+            justify-content: flex-start;
+            height: 40px;
+            margin: 1px 0;
+        }
+        .pile-row.empty {
+            background-color: #ccc;
+        }
+        #timer, #score, #word-display, #round-display, #task-display {
+            font-size: 16px;
+            margin: 3px;
+        }
+        #enter-button {
+            font-size: 14px;
+            padding: 8px 16px;
+            margin-top: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #feedback {
+            font-size: 14px;
+            margin-top: 5px;
+            height: 18px;
+        }
+        #feedback.correct {
+            color: green;
+        }
+        #feedback.invalid {
+            color: red;
+        }
+        #active-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Popup Styles */
+        #popup, #startup-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        #popup-content, #startup-popup-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+            max-width: 600px;
+            margin: 0 20px;
+        }
+        #popup h2, #startup-popup h2 {
+            margin-top: 0;
+        }
+        #countdown {
+            font-size: 20px;
+            margin-top: 10px;
+        }
+        /* Hidden Input for Testing Code */
+        #code-input {
+            position: absolute;
+            left: -9999px;
+        }
+        #start-game-button {
+            font-size: 14px;
+            padding: 8px 16px;
+            margin-top: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ana's Word Cascade Game</h1>
+    <div id="round-display">Round: <span id="current-round">1</span>/10</div>
+    <div id="task-display">Task: <span id="current-task">1</span>/20</div>
+    <div id="timer">Time Left: <span id="time">10</span>s</div>
+    <div id="score">Score: <span id="score-value">0</span></div>
+    <div id="word-display">Word: <span id="current-word"></span></div>
+    <div id="game-container">
+        <div id="active-container">
+            <!-- Active Row of Letters -->
+            <div id="active-row" class="row"></div>
+            <!-- Feedback Message -->
+            <div id="feedback"></div>
+            <!-- Enter Button -->
+            <button id="enter-button">Enter</button>
+        </div>
+    </div>
+    <div id="pile-container">
+        <!-- Pile with 10 levels -->
+        <div class="pile-row empty"></div>
+        <div class="pile-row empty"></div>
+        <div class="pile-row empty"></div>
+        <div class="pile-row empty"></div>
+        <div class="pile-row empty"></div>
+        <div class="pile-row empty"></div>
+        <div class="pile-row empty"></div>
+        <div class="pile-row empty"></div>
+        <div class="pile-row empty"></div>
+        <div class="pile-row empty"></div>
+    </div>
+    <!-- Popup for Round Completion -->
+    <div id="popup">
+        <div id="popup-content">
+            <h2 id="popup-message"></h2>
+            <p>Current Score: <span id="popup-score"></span></p>
+            <div id="countdown"></div>
+        </div>
+    </div>
+    <!-- Startup Popup -->
+    <div id="startup-popup">
+        <div id="startup-popup-content">
+            <h2>Welcome to Ana's Word Cascade Game!</h2>
+            <p><strong>How to Play:</strong><br>
+            Each <strong>Round</strong> consists of a series of <strong>Tasks</strong>.<br>
+            In each Task, you’ll have a limited amount of time to form words from the letters given in the <strong>Active Row</strong>.<br>
+            The longer your word and the rarer the letters, the more points you earn! After time runs out, any unused letters are moved into the <strong>Bin</strong> (pile). Complete all Tasks in a Round to earn a bonus!</p>
+
+            <p><strong>Between Rounds:</strong><br>
+            You’ll enter a <strong>Bin-Clearing Phase</strong> where you can form words from the letters in the Bin to remove them—at a cost!<br>
+            Each valid word removes letters from the Bin but deducts points equal to 25% of the word’s normal value.<br>
+            Clearing the Bin helps keep space free for future Rounds.</p>
+
+            <p><strong>Game Over:</strong><br>
+            The game ends if the Bin fills up completely (no more space for new letters).<br>
+            Manage your letters wisely and aim for the highest score!</p>
+
+            <p>Click "Start" to begin.</p>
+            <button id="start-game-button">Start</button>
+        </div>
+    </div>
+
+    <!-- Hidden Input for Testing Code -->
+    <input type="text" id="code-input" autocomplete="off">
+
+    <script>
+        const vowels = ["A", "E", "I", "O", "U"];
+        const consonants = "BCDFGHJKLMNPQRSTVWXYZ".split("");
+        const bonusLetters = { J: 5, X: 5, Q: 10, Z: 10 };
+
+        const getRandomElement = (array) => array[Math.floor(Math.random() * array.length)];
+        const shuffleArray = (array) => array.sort(() => Math.random() - 0.5);
+
+        // Variables
+        const activeRow = document.getElementById("active-row");
+        const pileContainer = document.getElementById("pile-container");
+        const timeDisplay = document.getElementById("time");
+        const scoreDisplay = document.getElementById("score-value");
+        const wordDisplay = document.getElementById("current-word");
+        const enterButton = document.getElementById("enter-button");
+        const feedback = document.getElementById("feedback");
+        const pileRows = Array.from(pileContainer.children);
+        const roundDisplay = document.getElementById("current-round");
+        const taskDisplay = document.getElementById("current-task");
+        const popup = document.getElementById("popup");
+        const popupMessage = document.getElementById("popup-message");
+        const popupScore = document.getElementById("popup-score");
+        const countdownDisplay = document.getElementById("countdown");
+        const activeContainer = document.getElementById("active-container");
+        const codeInput = document.getElementById("code-input");
+
+        const startupPopup = document.getElementById("startup-popup");
+        const startGameButton = document.getElementById("start-game-button");
+
+        let timeLeft = 10;
+        let score = 0;
+        let currentWord = "";
+        let selectedTiles = [];
+        let maxPileRows = 10;
+        let currentRound = 1;
+        let currentTask = 1;
+        let totalRounds = 10;
+        let totalTasksPerRound = 20;
+        let timerInterval;
+        let isBinClearingPhase = false;
+        let binClearingTimeLeft = 30;
+        let countdownTime = 8;
+        let codeBuffer = "";
+
+        const generateTiles = () => {
+            return shuffleArray([
+                ...Array(6).fill(null).map(() => getRandomElement(consonants)),
+                ...Array(4).fill(null).map(() => getRandomElement(vowels))
+            ]);
+        };
+
+        const calculateWordScore = (word) => {
+            let baseScore = word.length * 10;
+            let bonusScore = 0;
+
+            word.split("").forEach((letter) => {
+                bonusScore += bonusLetters[letter.toUpperCase()] || 0;
+            });
+
+            if (word.length === 10) bonusScore += 50;
+            else if (word.length === 9) bonusScore += 40;
+            else if (word.length === 8) bonusScore += 30;
+            else if (word.length === 7) bonusScore += 20;
+            else if (word.length === 6) bonusScore += 10;
+
+            return baseScore + bonusScore;
+        };
+
+        const addRow = () => {
+            activeRow.innerHTML = "";
+            const tiles = generateTiles();
+            tiles.forEach((letter) => {
+                const letterDiv = document.createElement("div");
+                letterDiv.classList.add("letter", "active");
+                letterDiv.textContent = letter;
+                activeRow.appendChild(letterDiv);
+            });
+        };
+
+        const startTimer = () => {
+            clearInterval(timerInterval);
+            timeDisplay.textContent = timeLeft;
+            timerInterval = setInterval(updateTimer, 1000);
+        };
+
+        const updateTimer = () => {
+            timeLeft--;
+            timeDisplay.textContent = timeLeft;
+            if (timeLeft <= 0) {
+                if (isBinClearingPhase) {
+                    endBinClearingPhase();
+                } else {
+                    endTurn();
+                }
+            }
+        };
+
+        const endTurn = () => {
+            moveUnusedToPile();
+            resetCurrentWord();
+            currentTask++;
+            if (currentTask > totalTasksPerRound) {
+                endRound();
+            } else {
+                taskDisplay.textContent = currentTask;
+                timeLeft = 11 - currentRound; // Decreasing time per round
+                addRow();
+                startTimer();
+                checkGameOver();
+            }
+        };
+
+        const endRound = () => {
+            clearInterval(timerInterval);
+            // Add scaling bonus
+            let roundBonus = 40 + (currentRound * 10);
+            score += roundBonus;
+            updateScore();
+            showPopupWithCountdown(`Congratulations on completing Round ${currentRound}! You earned a bonus of ${roundBonus} points!`);
+        };
+
+        const startNextRound = () => {
+            currentRound++;
+            if (currentRound > totalRounds) {
+                alert(`Game Over! Final Score: ${score}`);
+                resetGame();
+                return;
+            }
+            roundDisplay.textContent = currentRound;
+            currentTask = 1;
+            taskDisplay.textContent = currentTask;
+            timeLeft = 11 - currentRound;
+            addRow();
+            activeRow.style.display = 'flex';
+            startTimer();
+        };
+
+        const moveUnusedToPile = () => {
+            const unusedTiles = Array.from(activeRow.children).filter(
+                (tile) => !tile.classList.contains("selected")
+            );
+            addToPile(unusedTiles);
+            activeRow.innerHTML = "";
+        };
+
+        const addToPile = (tiles) => {
+            tiles.forEach((tile) => {
+                for (let rowIndex = 0; rowIndex < maxPileRows; rowIndex++) {
+                    if (pileRows[rowIndex].children.length < 10) {
+                        const pileTile = tile.cloneNode(true);
+                        pileTile.classList.remove("active");
+                        pileTile.classList.add("pile");
+                        pileRows[rowIndex].classList.remove("empty");
+                        pileRows[rowIndex].appendChild(pileTile);
+                        break;
+                    }
+                }
+            });
+            checkGameOver();
+        };
+
+        const checkIfRowCleared = () => {
+            if (!activeRow.children.length) {
+                score += 30;
+                updateScore();
+                showFeedback("Row Cleared! +30 points!", "correct");
+            }
+        };
+
+        const resetGame = () => {
+            score = 0;
+            updateScore();
+            timeLeft = 10;
+            currentRound = 1;
+            currentTask = 1;
+            roundDisplay.textContent = currentRound;
+            taskDisplay.textContent = currentTask;
+            pileRows.forEach((row) => {
+                row.innerHTML = "";
+                row.classList.add("empty");
+            });
+            isBinClearingPhase = false;
+            addRow();
+            startTimer();
+        };
+
+        const updateScore = () => {
+            scoreDisplay.textContent = score;
+        };
+
+        const resetCurrentWord = () => {
+            currentWord = "";
+            wordDisplay.textContent = "";
+            deselectTiles();
+        };
+
+        activeRow.addEventListener("click", (e) => {
+            if (isBinClearingPhase) return; 
+            if (e.target.classList.contains("letter") && e.target.classList.contains("active")) {
+                const tile = e.target;
+                const letter = tile.textContent;
+
+                if (tile.classList.contains("selected")) {
+                    if (selectedTiles[selectedTiles.length - 1] === tile) {
+                        currentWord = currentWord.slice(0, -1);
+                        wordDisplay.textContent = currentWord;
+                        tile.classList.remove("selected");
+                        selectedTiles.pop();
+                    }
+                } else {
+                    currentWord += letter;
+                    wordDisplay.textContent = currentWord;
+                    tile.classList.add("selected");
+                    selectedTiles.push(tile);
+                }
+            }
+        });
+
+        const pileClickHandler = (e) => {
+            if (e.target.classList.contains("letter") && e.target.classList.contains("pile")) {
+                const tile = e.target;
+                const letter = tile.textContent;
+
+                if (tile.classList.contains("selected")) {
+                    if (selectedTiles[selectedTiles.length - 1] === tile) {
+                        currentWord = currentWord.slice(0, -1);
+                        wordDisplay.textContent = currentWord;
+                        tile.classList.remove("selected");
+                        selectedTiles.pop();
+                    }
+                } else {
+                    currentWord += letter;
+                    wordDisplay.textContent = currentWord;
+                    tile.classList.add("selected");
+                    selectedTiles.push(tile);
+                }
+            }
+        };
+
+        enterButton.addEventListener("click", async () => {
+            if (currentWord.length < 3) {
+                showFeedback("Invalid Word", "invalid");
+                deselectTiles();
+            } else {
+                const isValid = await validateWord(currentWord);
+                if (isValid) {
+                    const wordScore = calculateWordScore(currentWord);
+                    if (isBinClearingPhase) {
+                        // Cost is 25% of word score, rounded down
+                        const cost = Math.floor(wordScore * 0.25);
+                        score -= cost;
+                        updateScore();
+                        showFeedback(`Word Accepted! -${cost} points`, "correct");
+                        removeSelectedTilesFromPile();
+                    } else {
+                        score += wordScore;
+                        updateScore();
+                        showFeedback(`Correct! +${wordScore} points`, "correct");
+                        clearSelectedTiles();
+                        checkIfRowCleared();
+                    }
+                } else {
+                    showFeedback("Invalid Word", "invalid");
+                    deselectTiles();
+                }
+            }
+            resetCurrentWord();
+        });
+
+        const validateWord = async (word) => {
+            try {
+                const response = await fetch(
+                    `https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`
+                );
+                return response.ok;
+            } catch (error) {
+                console.error("Error validating word:", error);
+                return false;
+            }
+        };
+
+        const showFeedback = (message, type) => {
+            feedback.textContent = message;
+            feedback.className = type;
+            setTimeout(() => (feedback.textContent = ""), 2000);
+        };
+
+        const clearSelectedTiles = () => {
+            selectedTiles.forEach((tile) => tile.remove());
+            selectedTiles = [];
+        };
+
+        const deselectTiles = () => {
+            selectedTiles.forEach((tile) => {
+                tile.classList.remove("selected");
+            });
+            selectedTiles = [];
+        };
+
+        const showPopupWithCountdown = (message) => {
+            popupMessage.textContent = message;
+            popupScore.textContent = score;
+            countdownTime = 8;
+            countdownDisplay.textContent = `Bin-clearing phase starts in ${countdownTime} seconds...`;
+            popup.style.display = "flex";
+            const countdownInterval = setInterval(() => {
+                countdownTime--;
+                countdownDisplay.textContent = `Bin-clearing phase starts in ${countdownTime} seconds...`;
+                if (countdownTime <= 0) {
+                    clearInterval(countdownInterval);
+                    popup.style.display = "none";
+                    startBinClearingPhase();
+                }
+            }, 1000);
+        };
+
+        const startBinClearingPhase = () => {
+            isBinClearingPhase = true;
+            binClearingTimeLeft = 30;
+            timeLeft = binClearingTimeLeft;
+            timeDisplay.textContent = timeLeft;
+            feedback.textContent = "Bin-Clearing Phase!";
+            activeRow.style.display = 'none';
+            startTimer();
+            pileContainer.addEventListener("click", pileClickHandler);
+        };
+
+        const endBinClearingPhase = () => {
+            isBinClearingPhase = false;
+            pileContainer.removeEventListener("click", pileClickHandler);
+            resetCurrentWord();
+            startNextRound();
+        };
+
+        const removeSelectedTilesFromPile = () => {
+            selectedTiles.forEach((tile) => {
+                const parentRow = tile.parentElement;
+                tile.remove();
+                if (parentRow.children.length === 0) {
+                    parentRow.classList.add("empty");
+                }
+            });
+            selectedTiles = [];
+        };
+
+        const checkGameOver = () => {
+            let isPileFull = pileRows.every(row => row.children.length >= 10);
+            if (isPileFull) {
+                clearInterval(timerInterval);
+                alert(`Game Over! The bin is full. Final Score: ${score}`);
+                resetGame();
+            }
+        };
+
+        // Testing Feature: Auto-Advance to Final Turn
+        document.addEventListener('keydown', (e) => {
+            if (isBinClearingPhase) return;
+            codeBuffer += e.key;
+            if (codeBuffer.includes('216570')) {
+                codeBuffer = '';
+                currentTask = totalTasksPerRound - 1;
+                taskDisplay.textContent = currentTask;
+                showFeedback("Testing Code Activated: Advancing to Final Turn", "correct");
+            }
+            if (codeBuffer.length > 10) {
+                codeBuffer = codeBuffer.slice(-10);
+            }
+        });
+
+        // Start game after user clicks "Start" in startup popup
+        startGameButton.addEventListener("click", () => {
+            startupPopup.style.display = "none";
+            // Now start the game
+            resetGame();
+        });
+
+        // Show startup popup on load
+        window.addEventListener("load", () => {
+            startupPopup.style.display = "flex";
+        });
+    </script>
+</body>
+</html>
