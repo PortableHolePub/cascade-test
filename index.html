@@ -17,7 +17,7 @@
         }
         h1 {
             margin: 2vw;
-            font-size: 6vw;
+            font-size: 6vw; 
             color: #333;
             text-align: center;
         }
@@ -27,7 +27,7 @@
             flex-direction: column;
             align-items: center;
             margin-bottom: 2vw;
-            width: 90vw;
+            width: 90vw; 
         }
 
         #hud-container {
@@ -78,23 +78,23 @@
             background-color: #ffa500;
         }
 
+        /* Removed flex-direction: column-reverse; Now top row is at the top */
         #pile-container {
             display: flex;
-            flex-direction: column-reverse;
+            flex-direction: column; 
             border: 2px solid #333;
             width: 90vw;
-            height: 60vh;
+            height: 60vh; 
             background-color: #eee;
             padding: 1vw;
             box-sizing: border-box;
-            overflow: hidden;
+            overflow: hidden; /* The bottom rows will go out of view as it fills */
         }
         .pile-row {
             display: flex;
             justify-content: flex-start;
             height: 10vw;
             margin: 0.5vw 0;
-            transition: background-color 0.5s;
         }
         .pile-row.empty {
             background-color: #ccc;
@@ -207,14 +207,6 @@
                 height: auto;
             }
         }
-
-        @keyframes blink {
-            0%, 100% { background-color: red; }
-            50% { background-color: #ff5555; }
-        }
-        .blink {
-            animation: blink 1s infinite;
-        }
     </style>
 </head>
 <body>
@@ -245,7 +237,6 @@
         <div class="pile-row empty"></div>
         <div class="pile-row empty"></div>
     </div>
-
     <div id="popup">
         <div id="popup-content">
             <h2 id="popup-message"></h2>
@@ -253,14 +244,13 @@
             <div id="countdown"></div>
         </div>
     </div>
-
     <div id="startup-popup">
         <div id="startup-popup-content">
             <h2>Welcome to Ana's Word Cascade Game!</h2>
             <p><strong>How to Play:</strong><br>
             Each <strong>Round</strong> consists of a series of <strong>Tasks</strong>.<br>
             In each Task, you’ll have a limited amount of time to form words from the letters given in the <strong>Active Row</strong>.<br>
-            The longer your word and the rarer the letters, the more points you earn! After time runs out, any unused letters are moved into the <strong>Bin</strong>. Complete all Tasks in a Round to earn a bonus!</p>
+            The longer your word and the rarer the letters, the more points you earn! After time runs out, any unused letters are moved into the <strong>Bin</strong> (pile). Complete all Tasks in a Round to earn a bonus!</p>
 
             <p><strong>Between Rounds:</strong><br>
             You’ll enter a <strong>Bin-Clearing Phase</strong> where you can form words from the letters in the Bin to remove them—at a cost!<br>
@@ -268,7 +258,7 @@
             Clearing the Bin helps keep space free for future Rounds.</p>
 
             <p><strong>Game Over:</strong><br>
-            The game ends if the Bin fills up completely.<br>
+            The game ends if the Bin fills up completely (no more space for new letters).<br>
             Manage your letters wisely and aim for the highest score!</p>
 
             <p>Click "Start" to begin.</p>
@@ -325,6 +315,7 @@
         const calculateWordScore = (word) => {
             let baseScore = word.length * 10;
             let bonusScore = 0;
+
             word.split("").forEach((letter) => {
                 bonusScore += bonusLetters[letter.toUpperCase()] || 0;
             });
@@ -427,8 +418,6 @@
                     }
                 }
             });
-            updatePileAppearance();
-            checkGameOver();
         };
 
         const checkIfRowCleared = () => {
@@ -450,11 +439,9 @@
             pileRows.forEach((row) => {
                 row.innerHTML = "";
                 row.classList.add("empty");
-                row.classList.remove("blink");
             });
             isBinClearingPhase = false;
             addRow();
-            updatePileAppearance();
             startTimer();
         };
 
@@ -469,7 +456,7 @@
         };
 
         activeRow.addEventListener("click", (e) => {
-            if (isBinClearingPhase) return; 
+            if (isBinClearingPhase) return;
             if (e.target.classList.contains("letter") && e.target.classList.contains("active")) {
                 const tile = e.target;
                 const letter = tile.textContent;
@@ -608,7 +595,6 @@
                 }
             });
             selectedTiles = [];
-            updatePileAppearance();
         };
 
         const checkGameOver = () => {
@@ -619,40 +605,6 @@
                 resetGame();
             }
         };
-
-        function updatePileAppearance() {
-            // Count filled rows
-            let filledRows = pileRows.filter(row => row.children.length > 0).length;
-            let fullness = filledRows / maxPileRows; // 0 to 1
-
-            // If fullness=0: all gray, fullness=1: all red.
-            // Otherwise a smooth gradient between gray and red.
-            if (fullness === 0) {
-                pileContainer.style.background = "#cccccc";
-            } else if (fullness === 1) {
-                pileContainer.style.background = "#ff0000";
-            } else {
-                let stopPoint = Math.round((1 - fullness) * 100);
-                // Clamp stopPoint for blending
-                if (stopPoint < 2) stopPoint = 2;
-                if (stopPoint > 98) stopPoint = 98;
-                // Smooth transition: gray bottom to red top with a blend zone
-                pileContainer.style.background = `linear-gradient(to top, #cccccc 0%, #cccccc ${stopPoint-2}%, #ff8888 ${stopPoint+2}%, #ff0000 100%)`;
-            }
-
-            // Blinking top row condition:
-            // Blink top row if any letters are in the level below it.
-            // top row is last element in pileRows (pileRows[9])
-            // level below it is pileRows[8].
-            const topRow = pileRows[pileRows.length - 1];
-            const belowTopRow = pileRows[pileRows.length - 2];
-
-            if (belowTopRow.children.length > 0) {
-                topRow.classList.add("blink");
-            } else {
-                topRow.classList.remove("blink");
-            }
-        }
 
         startGameButton.addEventListener("click", () => {
             startupPopup.style.display = "none";
