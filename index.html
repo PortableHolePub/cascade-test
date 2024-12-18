@@ -88,7 +88,6 @@
             padding: 1vw;
             box-sizing: border-box;
             overflow: hidden;
-            /* We will dynamically update background via JS */
         }
         .pile-row {
             display: flex;
@@ -173,7 +172,6 @@
             cursor: pointer;
         }
 
-        /* Mobile-specific bin layout for better visibility */
         @media (max-width: 600px) {
             .pile-row .letter {
                 width: 6vw;
@@ -210,7 +208,6 @@
             }
         }
 
-        /* Blinking animation for top row when full */
         @keyframes blink {
             0%, 100% { background-color: red; }
             50% { background-color: #ff5555; }
@@ -618,39 +615,39 @@
             let isPileFull = pileRows.every(row => row.children.length >= 10);
             if (isPileFull) {
                 clearInterval(timerInterval);
-                // Blink top row
-                pileRows[pileRows.length - 1].classList.add("blink");
                 alert(`Game Over! The bin is full. Final Score: ${score}`);
                 resetGame();
             }
         };
 
         function updatePileAppearance() {
-            // Calculate how full the bin is
+            // Count filled rows
             let filledRows = pileRows.filter(row => row.children.length > 0).length;
             let fullness = filledRows / maxPileRows; // 0 to 1
 
-            // Create a gradient from gray to red based on fullness
-            // For example:
-            // At 0% full: light gray
-            // At 50% full: halfway between gray and light red
-            // At 100% full: bright red
-            // We'll pick a simple approach: from #cccccc (gray) at bottom to red (#ff0000) at top
-            // We'll adjust stops dynamically: more full = more red
-            const startColor = "#cccccc";
-            const endColor = "#ff0000";
-            // We can just interpolate the gradient visually by using a multiple stop gradient
-            // A simple approach: The top part of the gradient is red, bottom is gray, and we set a midpoint
-            // The higher the fullness, the more we shift the midpoint toward red.
+            // If fullness=0: all gray, fullness=1: all red.
+            // Otherwise a smooth gradient between gray and red.
+            if (fullness === 0) {
+                pileContainer.style.background = "#cccccc";
+            } else if (fullness === 1) {
+                pileContainer.style.background = "#ff0000";
+            } else {
+                let stopPoint = Math.round((1 - fullness) * 100);
+                // Clamp stopPoint for blending
+                if (stopPoint < 2) stopPoint = 2;
+                if (stopPoint > 98) stopPoint = 98;
+                // Smooth transition: gray bottom to red top with a blend zone
+                pileContainer.style.background = `linear-gradient(to top, #cccccc 0%, #cccccc ${stopPoint-2}%, #ff8888 ${stopPoint+2}%, #ff0000 100%)`;
+            }
 
-            const midpointPercent = Math.round(fullness * 100);
-            // Gradient: bottom gray, top red. We'll place a transition stop at midpointPercent.
-            pileContainer.style.background = `linear-gradient(to top, ${startColor} 0%, ${startColor} ${100 - midpointPercent}%, ${endColor} ${100 - midpointPercent}%, ${endColor} 100%)`;
+            // Blinking top row condition:
+            // Blink top row if any letters are in the level below it.
+            // top row is last element in pileRows (pileRows[9])
+            // level below it is pileRows[8].
+            const topRow = pileRows[pileRows.length - 1];
+            const belowTopRow = pileRows[pileRows.length - 2];
 
-            // Check top row for blinking condition
-            // If top row is filled, we add blink. If not, remove blink.
-            let topRow = pileRows[pileRows.length - 1];
-            if (topRow.children.length > 0) {
+            if (belowTopRow.children.length > 0) {
                 topRow.classList.add("blink");
             } else {
                 topRow.classList.remove("blink");
