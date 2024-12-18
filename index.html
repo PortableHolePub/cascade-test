@@ -53,7 +53,7 @@
             flex-wrap: wrap;
         }
 
-        /* Large playable letters (active row) */
+        /* Large playable letters as before */
         .letter {
             width: 10vw;
             height: 10vw;
@@ -68,9 +68,8 @@
             user-select: none;
             margin: 1vw;
         }
-
         .letter.active {
-            background-color: #4caf50;
+            background-color: #4caf50; /* Green playable tiles */
         }
         .letter.pile {
             background-color: #888;
@@ -79,33 +78,33 @@
             background-color: #ffa500;
         }
 
-        /* Bin container: 
-           Using flex-direction: column-reverse for bottom-up filling.
-           Fixed height, overflow: auto to allow scrolling.
+        /* Bin settings:
+           - column-reverse so the bin fills from bottom to top.
+           - fixed height with overflow: auto to allow scrolling if needed.
         */
         #pile-container {
             display: flex;
             flex-direction: column-reverse;
             border: 2px solid #333;
             width: 90vw;
-            height: 60vh; /* Fixed height, can adjust as needed */
+            height: 60vh;
             background-color: #eee;
             padding: 1vw;
             box-sizing: border-box;
-            overflow: auto; /* Allows scrolling if content exceeds height */
+            overflow: auto; /* scroll if all rows don't fit at once */
         }
 
         .pile-row {
             display: flex;
             justify-content: flex-start;
-            height: 10vw; /* Same tile size as active row for consistency */
+            height: 10vw; /* same tile size for consistency */
             margin: 0.5vw 0;
         }
         .pile-row.empty {
             background-color: #ccc;
         }
 
-        /* Red border around the top row (last child visually at top due to column-reverse) */
+        /* Red border around the top row (which is the last child visually) */
         .pile-row:last-child {
             border: 2px solid red;
         }
@@ -181,10 +180,6 @@
             border-radius: 3vw;
             cursor: pointer;
         }
-
-        @media (max-width: 600px) {
-            /* VW units will scale accordingly */
-        }
     </style>
 </head>
 <body>
@@ -207,7 +202,7 @@
         </div>
     </div>
     <div id="pile-container">
-        <!-- 10 rows: bottom row is first child (due to column-reverse), top row is last -->
+        <!-- Bottom row first (due to column-reverse), top row is last and gets a red border -->
         <div class="pile-row empty"></div>
         <div class="pile-row empty"></div>
         <div class="pile-row empty"></div>
@@ -219,7 +214,6 @@
         <div class="pile-row empty"></div>
         <div class="pile-row empty"></div>
     </div>
-    <!-- Popup for Round Completion -->
     <div id="popup">
         <div id="popup-content">
             <h2 id="popup-message"></h2>
@@ -227,7 +221,6 @@
             <div id="countdown"></div>
         </div>
     </div>
-    <!-- Startup Popup -->
     <div id="startup-popup">
         <div id="startup-popup-content">
             <h2>Welcome to Ana's Word Cascade Game!</h2>
