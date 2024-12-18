@@ -59,6 +59,7 @@
             flex-wrap: wrap;
         }
 
+        /* Uniform letter size */
         .letter {
             width: 10vw;
             height: 10vw;
@@ -242,8 +243,8 @@
             The longer your word and the rarer the letters, the more points you earn! After time runs out, any unused letters are moved into the <strong>Bin</strong>. Complete all Tasks in a Round to earn a bonus!</p>
 
             <p><strong>Between Rounds:</strong><br>
-            You’ll enter a <strong>Bin-Clearing Phase</strong> where you can form words from the letters in the Bin to remove them—at a cost!<br>
-            Each valid word removes letters from the Bin but deducts points equal to 25% of the word’s value.<br>
+            You’ll enter a <strong>Bin-Clearing Phase</strong> where you can form words from the letters in the Bin to remove them—at **25%** of the full word's value.<br>
+            Each valid word removes letters from the Bin and awards you 25% of its normal word score as points.<br>
             Clearing the Bin helps keep space free for future Rounds.</p>
 
             <p><strong>Game Over:</strong><br>
@@ -381,9 +382,8 @@
         function showPopupAfterRound(message){
             popupMessage.textContent=message;
             popupScore.textContent=score;
-            // Now we do a 5-second countdown to bin clearing
-            let countdown = 5;
-            countdownDisplay.textContent = `Bin clearing phase begins in ${countdown}...`;
+            let countdown=5;
+            countdownDisplay.textContent=`Bin clearing phase begins in ${countdown}...`;
             popup.style.display="flex";
             const interval=setInterval(()=>{
                 countdown--;
@@ -495,19 +495,11 @@
         });
 
         enterButton.addEventListener("click",async()=>{
-            if(currentWord.length<3&&!isBinClearingPhase){
-                if(checkSpecialCode()){
-                    specialCodeCount++;
-                    showFeedback("Special Code Word!","correct");
-                    if(specialCodeCount>=SPECIAL_CODE_TIMES){
-                        showFeedback("Special Code Triggered! Jumping to end of round...","correct");
-                        endRound();
-                    }
-                }else{
-                    showFeedback("Invalid Word","invalid");
-                    deselectTiles();
-                    specialCodeCount=0;
-                }
+            // No 2-letter words anywhere, we already require length >=3
+            if(currentWord.length<3){
+                showFeedback("Invalid Word","invalid");
+                deselectTiles();
+                specialCodeCount=0;
                 resetCurrentWord();
                 return;
             }
@@ -516,14 +508,16 @@
             if(isValid){
                 const wordScore=calculateWordScore(currentWord);
                 if(isBinClearingPhase){
-                    const cost=Math.floor(wordScore*0.25);
-                    score-=cost;
-                    binPointsChange-=cost;
+                    // Player gets 25% of full word score
+                    const binPoints=Math.floor(wordScore*0.25);
+                    score+=binPoints;
+                    binPointsChange+=binPoints;
                     binLettersRemoved+=selectedTiles.length;
                     updateScore();
-                    showFeedback(`Word Accepted! -${cost} points`,"correct");
+                    showFeedback(`Word Accepted! +${binPoints} points`,"correct");
                     removeSelectedTilesFromPile();
                 }else{
+                    // Normal mode
                     if(checkSpecialCode()){
                         specialCodeCount++;
                         if(specialCodeCount>=SPECIAL_CODE_TIMES){
@@ -591,8 +585,6 @@
             selectedTiles=[];
         };
 
-        // Now showPopupAfterRound is used instead of showPopup for endRound
-        // showPopup replaced by showPopupAfterRound (5 second countdown)
         function showPopupAfterRound(message){
             popupMessage.textContent=message;
             popupScore.textContent=score;
@@ -673,7 +665,7 @@
         };
 
         function showBinClearingResults(){
-            // After bin clearing, we show 10-second countdown to next round (unchanged from previous)
+            // After bin clearing, 10-second countdown
             binPopupMessage.textContent="Congratulations!";
             binPopupDetails.textContent=`You added ${binPointsChange} points and removed ${binLettersRemoved} letters.\nRound ${currentRound+1} starts soon!`;
             binPopup.style.display="flex";
