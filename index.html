@@ -17,7 +17,7 @@
         }
         h1 {
             margin: 2vw;
-            font-size: 6vw; 
+            font-size: 6vw;
             color: #333;
             text-align: center;
         }
@@ -27,7 +27,7 @@
             flex-direction: column;
             align-items: center;
             margin-bottom: 2vw;
-            width: 90vw; 
+            width: 90vw;
         }
 
         #hud-container {
@@ -38,10 +38,9 @@
             width: 90vw;
         }
         #round-display, #task-display, #timer, #score {
-            font-size: 4vw; 
-            margin: 1vw 0; 
+            font-size: 4vw;
+            margin: 1vw 0;
         }
-
         #word-display {
             font-size: 4vw;
             margin: 2vw 0;
@@ -54,19 +53,20 @@
             flex-wrap: wrap;
         }
 
+        /* Smaller tiles to fit 10x10 grid on screen */
         .letter {
-            width: 10vw;
-            height: 10vw;
+            width: 5vw;
+            height: 5vw;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 5vw;
+            font-size: 3vw;
             font-weight: bold;
             color: white;
-            border-radius: 2vw;
+            border-radius: 1vw;
             cursor: pointer;
             user-select: none;
-            margin: 1vw;
+            margin: 0.5vw;
         }
         .letter.active {
             background-color: #4caf50;
@@ -78,32 +78,38 @@
             background-color: #ffa500;
         }
 
-        /* Removed flex-direction: column-reverse; Now top row is at the top */
+        /* All rows visible at once: 
+           10 rows of ~6vw height each (5vw tile + margins) = ~60vw total. 
+           We'll give 70vw height to be safe. */
         #pile-container {
             display: flex;
-            flex-direction: column; 
+            flex-direction: column;
             border: 2px solid #333;
-            width: 90vw;
-            height: 60vh; 
+            width: 70vw;
+            height: 70vw;
             background-color: #eee;
             padding: 1vw;
             box-sizing: border-box;
-            overflow: hidden; /* The bottom rows will go out of view as it fills */
         }
         .pile-row {
             display: flex;
             justify-content: flex-start;
-            height: 10vw;
+            height: 6vw;
             margin: 0.5vw 0;
         }
         .pile-row.empty {
             background-color: #ccc;
         }
 
+        /* Red border around the top row */
+        .pile-row:first-child {
+            border: 2px solid red;
+        }
+
         #feedback {
             font-size: 4vw;
             margin-top: 2vw;
-            height: 5vw; 
+            height: 5vw;
         }
         #feedback.correct {
             color: green;
@@ -173,39 +179,7 @@
         }
 
         @media (max-width: 600px) {
-            .pile-row .letter {
-                width: 6vw;
-                height: 6vw;
-                font-size: 4vw;
-                margin: 0.5vw;
-                border-radius: 1vw;
-            }
-
-            #pile-container {
-                width: 70vw;
-                height: 70vw;
-            }
-
-            h1 {
-                font-size: 7vw;
-            }
-            #enter-button {
-                font-size: 5vw;
-                padding: 4vw 8vw;
-            }
-            .letter {
-                width: 10vw;
-                height: 10vw;
-                font-size: 5vw;
-                margin: 1vw;
-            }
-            #timer, #score, #word-display, #round-display, #task-display {
-                font-size: 5vw;
-            }
-            #feedback {
-                font-size: 5vw;
-                height: auto;
-            }
+            /* Adjust slightly if needed, but we already use vw units so it should scale */
         }
     </style>
 </head>
@@ -226,6 +200,7 @@
         </div>
     </div>
     <div id="pile-container">
+        <!-- Top row will have a red border (via CSS .pile-row:first-child) -->
         <div class="pile-row empty"></div>
         <div class="pile-row empty"></div>
         <div class="pile-row empty"></div>
@@ -249,7 +224,7 @@
             <h2>Welcome to Ana's Word Cascade Game!</h2>
             <p><strong>How to Play:</strong><br>
             Each <strong>Round</strong> consists of a series of <strong>Tasks</strong>.<br>
-            In each Task, you’ll have a limited amount of time to form words from the letters given in the <strong>Active Row</strong>.<br>
+            In each Task, you’ll have a limited amount of time to form words from the letters in the <strong>Active Row</strong>.<br>
             The longer your word and the rarer the letters, the more points you earn! After time runs out, any unused letters are moved into the <strong>Bin</strong> (pile). Complete all Tasks in a Round to earn a bonus!</p>
 
             <p><strong>Between Rounds:</strong><br>
@@ -406,6 +381,7 @@
         };
 
         const addToPile = (tiles) => {
+            // Add tiles starting from top row down
             tiles.forEach((tile) => {
                 for (let rowIndex = 0; rowIndex < maxPileRows; rowIndex++) {
                     if (pileRows[rowIndex].children.length < 10) {
