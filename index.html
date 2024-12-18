@@ -15,6 +15,7 @@
             margin: 0;
             background-color: #f4f4f9;
         }
+
         h1 {
             margin: 2vw;
             font-size: 6vw;
@@ -22,6 +23,7 @@
             text-align: center;
         }
 
+        /* HUD container now arranged so Round/Task on one line, Time/Score on another line */
         #hud-container {
             display: flex;
             flex-direction: column;
@@ -29,10 +31,24 @@
             margin: 2vw 0;
             width: 90vw;
         }
-        #round-display, #task-display, #timer, #score {
-            font-size: 4vw;
+
+        /* Create separate lines for Round/Task and Time/Score */
+        .hud-line {
+            display: flex;
+            justify-content: center;
+            width: 100%;
             margin: 1vw 0;
+            font-size: 4vw;
         }
+
+        #round-task-line {
+            /* Example: "Round X/10 | Task Y/20" */
+        }
+
+        #time-score-line {
+            /* Example: "Time Left: Xs | Score: Y" */
+        }
+
         #word-display {
             font-size: 4vw;
             margin: 2vw 0;
@@ -68,20 +84,19 @@
             user-select: none;
             margin: 1vw;
         }
+
         .letter.active {
-            background-color: #4caf50; /* Green for active row letters */
+            background-color: #4caf50; 
         }
+
         .letter.pile {
-            background-color: #888; /* Gray for pile letters */
+            background-color: #888; 
         }
+
         .letter.selected {
             background-color: #ffa500;
         }
 
-        /* Bin container:
-           - column-reverse to fill from bottom to top
-           - overflow: auto for scrolling
-        */
         #pile-container {
             display: flex;
             flex-direction: column-reverse;
@@ -97,14 +112,14 @@
         .pile-row {
             display: flex;
             justify-content: flex-start;
-            height: 10vw; /* same as letter height */
+            height: 10vw;
             margin: 0.5vw 0;
         }
+
         .pile-row.empty {
             background-color: #ccc;
         }
 
-        /* Red border around the top row (last child visually) */
         .pile-row:last-child {
             border: 2px solid red;
         }
@@ -114,9 +129,11 @@
             margin-top: 2vw;
             height: 5vw;
         }
+
         #feedback.correct {
             color: green;
         }
+
         #feedback.invalid {
             color: red;
         }
@@ -151,6 +168,7 @@
             justify-content: center;
             z-index: 1000;
         }
+
         #popup-content, #startup-popup-content {
             background-color: white;
             padding: 5vw;
@@ -158,13 +176,16 @@
             text-align: center;
             max-width: 90vw;
         }
+
         #popup h2, #startup-popup h2 {
             margin-top: 0;
             font-size: 5vw;
         }
+
         #popup p, #startup-popup p {
             font-size: 4vw;
         }
+
         #countdown {
             font-size: 6vw;
             margin-top: 4vw;
@@ -180,16 +201,22 @@
             border-radius: 3vw;
             cursor: pointer;
         }
+
     </style>
 </head>
 <body>
     <h1>Ana's Word Cascade Game</h1>
     <div id="hud-container">
-        <div id="round-display">Round: <span id="current-round">1</span>/10</div>
-        <div id="task-display">Task: <span id="current-task">1</span>/20</div>
-        <div id="timer">Time Left: <span id="time">10</span>s</div>
-        <div id="score">Score: <span id="score-value">0</span></div>
-        <div id="word-display">Word: <span id="current-word"></span></div>
+        <div id="round-task-line" class="hud-line">
+            <!-- Round and Task together -->
+            Round: <span id="current-round">1</span>/10 &nbsp;|&nbsp; Task: <span id="current-task">1</span>/20
+        </div>
+        <div id="time-score-line" class="hud-line">
+            <!-- Time Left and Score together -->
+            Time Left: <span id="time">10</span>s &nbsp;|&nbsp; Score: <span id="score-value">0</span>
+        </div>
+        <!-- Removed the "Word:" label, just show the current word if needed -->
+        <div id="word-display"><span id="current-word"></span></div>
     </div>
     <div id="game-container">
         <div id="active-container">
@@ -202,7 +229,6 @@
         </div>
     </div>
     <div id="pile-container">
-        <!-- Bottom row first due to column-reverse, top row last (red border) -->
         <div class="pile-row empty"></div>
         <div class="pile-row empty"></div>
         <div class="pile-row empty"></div>
@@ -214,6 +240,7 @@
         <div class="pile-row empty"></div>
         <div class="pile-row empty"></div>
     </div>
+    <!-- Popup for Round Completion -->
     <div id="popup">
         <div id="popup-content">
             <h2 id="popup-message"></h2>
@@ -221,13 +248,14 @@
             <div id="countdown"></div>
         </div>
     </div>
+    <!-- Startup Popup -->
     <div id="startup-popup">
         <div id="startup-popup-content">
             <h2>Welcome to Ana's Word Cascade Game!</h2>
             <p><strong>How to Play:</strong><br>
             Each <strong>Round</strong> consists of a series of <strong>Tasks</strong>.<br>
             In each Task, you’ll have a limited amount of time to form words from the letters in the <strong>Active Row</strong>.<br>
-            The longer your word and the rarer the letters, the more points you earn! After time runs out, any unused letters are moved into the <strong>Bin</strong> (pile). Complete all Tasks in a Round to earn a bonus!</p>
+            The longer your word and the rarer the letters, the more points you earn! After time runs out, any unused letters are moved into the <strong>Bin</strong>. Complete all Tasks in a Round to earn a bonus!</p>
 
             <p><strong>Between Rounds:</strong><br>
             You’ll enter a <strong>Bin-Clearing Phase</strong> where you can form words from the letters in the Bin to remove them—at a cost!<br>
@@ -235,7 +263,7 @@
             Clearing the Bin helps keep space free for future Rounds.</p>
 
             <p><strong>Game Over:</strong><br>
-            The game ends if the Bin fills up completely (no more space for new letters).<br>
+            The game ends if the Bin fills up completely.<br>
             Manage your letters wisely and aim for the highest score!</p>
 
             <p>Click "Start" to begin.</p>
@@ -381,8 +409,7 @@
         };
 
         const addToPile = (tiles) => {
-            // With column-reverse, pileRows[0] is at the bottom visually,
-            // so we fill from pileRows[0] upward.
+            // column-reverse means pileRows[0] at bottom, fill upwards.
             tiles.forEach((tile) => {
                 for (let rowIndex = 0; rowIndex < maxPileRows; rowIndex++) {
                     if (pileRows[rowIndex].children.length < 10) {
@@ -428,7 +455,7 @@
 
         const resetCurrentWord = () => {
             currentWord = "";
-            wordDisplay.textContent = "";
+            wordDisplay.textContent = currentWord;
             deselectTiles();
         };
 
