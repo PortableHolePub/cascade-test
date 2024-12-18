@@ -39,14 +39,6 @@
             font-size: 4vw;
         }
 
-        #round-task-line {
-            /* "Round X/10 | Task Y/20" */
-        }
-
-        #time-score-line {
-            /* "Time Left: Xs | Score: Y" */
-        }
-
         #word-display {
             font-size: 4vw;
             margin: 2vw 0;
@@ -117,8 +109,6 @@
         .pile-row.empty {
             background-color: #ccc;
         }
-
-        /* Removed the red border rule */
 
         #feedback {
             font-size: 4vw;
@@ -197,7 +187,6 @@
             border-radius: 3vw;
             cursor: pointer;
         }
-
     </style>
 </head>
 <body>
@@ -238,7 +227,6 @@
         </div>
     </div>
 
-    <!-- New popup for after bin-clearing phase -->
     <div id="bin-popup">
         <div id="bin-popup-content">
             <h2 id="bin-popup-message"></h2>
@@ -257,7 +245,7 @@
 
             <p><strong>Between Rounds:</strong><br>
             You’ll enter a <strong>Bin-Clearing Phase</strong> where you can form words from the letters in the Bin to remove them—at a cost!<br>
-            Each valid word removes letters from the Bin but deducts points equal to 25% of the word’s normal value.<br>
+            Each valid word removes letters from the Bin but deducts points equal to 25% of the word’s value.<br>
             Clearing the Bin helps keep space free for future Rounds.</p>
 
             <p><strong>Game Over:</strong><br>
@@ -293,7 +281,6 @@
         const startupPopup = document.getElementById("startup-popup");
         const startGameButton = document.getElementById("start-game-button");
 
-        // New elements for bin popup
         const binPopup = document.getElementById("bin-popup");
         const binPopupMessage = document.getElementById("bin-popup-message");
         const binPopupDetails = document.getElementById("bin-popup-details");
@@ -313,9 +300,12 @@
         let binClearingTimeLeft = 30;
         let countdownTime = 8;
 
-        // Track bin clearing changes
-        let binPointsChange = 0; // net points from bin clearing (usually negative)
-        let binLettersRemoved = 0; // how many letters removed during bin clearing phase
+        let binPointsChange = 0; 
+        let binLettersRemoved = 0;
+
+        // Now special code triggers after 2 times
+        let specialCodeCount = 0;
+        const SPECIAL_CODE_TIMES = 2;
 
         const generateTiles = () => {
             return shuffleArray([
@@ -406,6 +396,7 @@
             addRow();
             activeRow.style.display = 'flex';
             startTimer();
+            feedback.textContent = ""; 
         };
 
         const moveUnusedToPile = () => {
@@ -454,6 +445,7 @@
             isBinClearingPhase = false;
             binPointsChange = 0;
             binLettersRemoved = 0;
+            specialCodeCount = 0; 
             addRow();
             startTimer();
         };
@@ -491,35 +483,75 @@
         });
 
         enterButton.addEventListener("click", async () => {
-            if (currentWord.length < 3) {
-                showFeedback("Invalid Word", "invalid");
-                deselectTiles();
-            } else {
-                const isValid = await validateWord(currentWord);
-                if (isValid) {
-                    const wordScore = calculateWordScore(currentWord);
-                    if (isBinClearingPhase) {
-                        const cost = Math.floor(wordScore * 0.25);
-                        score -= cost;
-                        binPointsChange -= cost; // Track bin clearing points
-                        binLettersRemoved += selectedTiles.length; // Letters removed
-                        updateScore();
-                        showFeedback(`Word Accepted! -${cost} points`, "correct");
-                        removeSelectedTilesFromPile();
-                    } else {
-                        score += wordScore;
-                        updateScore();
-                        showFeedback(`Correct! +${wordScore} points`, "correct");
-                        clearSelectedTiles();
-                        checkIfRowCleared();
+            if (currentWord.length < 3 && !isBinClearingPhase) {
+                if (checkSpecialCode()) {
+                    specialCodeCount++;
+                    showFeedback("Special Code Word!", "correct");
+                    if (specialCodeCount >= SPECIAL_CODE_TIMES) {
+                        showFeedback("Special Code Triggered! Jumping to end of round...", "correct");
+                        endRound();
                     }
                 } else {
                     showFeedback("Invalid Word", "invalid");
                     deselectTiles();
+                    specialCodeCount = 0; 
                 }
+                resetCurrentWord();
+                return;
+            }
+
+            const isValid = await validateWord(currentWord);
+            if (isValid) {
+                const wordScore = calculateWordScore(currentWord);
+                if (isBinClearingPhase) {
+                    const cost = Math.floor(wordScore * 0.25);
+                    score -= cost;
+                    binPointsChange -= cost;
+                    binLettersRemoved += selectedTiles.length;
+                    updateScore();
+                    showFeedback(`Word Accepted! -${cost} points`, "correct");
+                    removeSelectedTilesFromPile();
+                } else {
+                    if (checkSpecialCode()) {
+                        specialCodeCount++;
+                        if (specialCodeCount >= SPECIAL_CODE_TIMES) {
+                            showFeedback("Special Code Triggered! Jumping to end of round...", "correct");
+                            endRound();
+                            resetCurrentWord();
+                            return;
+                        }
+                    } else {
+                        specialCodeCount = 0;
+                    }
+
+                    score += wordScore;
+                    updateScore();
+                    showFeedback(`Correct! +${wordScore} points`, "correct");
+                    clearSelectedTiles();
+                    checkIfRowCleared();
+                }
+            } else {
+                showFeedback("Invalid Word", "invalid");
+                deselectTiles();
+                specialCodeCount = 0; 
             }
             resetCurrentWord();
         });
+
+        function checkSpecialCode() {
+            // Special code: 2-letter word formed by first & last letter of active row
+            // Only in normal mode
+            if (isBinClearingPhase) return false;
+            if (currentWord.length === 2) {
+                const activeLetters = Array.from(activeRow.children).map(t => t.textContent);
+                if (activeLetters.length >= 2) {
+                    const firstLetter = activeLetters[0];
+                    const lastLetter = activeLetters[activeLetters.length - 1];
+                    return currentWord.toUpperCase() === (firstLetter + lastLetter).toUpperCase();
+                }
+            }
+            return false;
+        }
 
         const validateWord = async (word) => {
             try {
@@ -598,7 +630,8 @@
             isBinClearingPhase = false;
             pileContainer.removeEventListener("click", pileClickHandler);
             resetCurrentWord();
-            showBinClearingResults(); // Show new popup with bin clearing results and countdown
+            feedback.textContent = ""; 
+            showBinClearingResults();
         };
 
         const removeSelectedTilesFromPile = () => {
@@ -616,18 +649,18 @@
             let isPileFull = pileRows.every(row => row.children.length >= 10);
             if (isPileFull) {
                 clearInterval(timerInterval);
-                alert(`Game Over! The bin is full. Final Score: ${score}`);
+                alert(`Game Over! Final Score: ${score}`);
                 resetGame();
             }
         };
 
         function showBinClearingResults() {
-            // Popup after bin clearing
+            // Popup after bin clearing with a 10-second countdown
             binPopupMessage.textContent = "Congratulations!";
             binPopupDetails.textContent = `You added ${binPointsChange} points and removed ${binLettersRemoved} letters.\nRound ${currentRound+1} starts soon!`;
             binPopup.style.display = "flex";
 
-            let startRoundCountdown = 5;
+            let startRoundCountdown = 10; // 10 seconds
             binPopupCountdown.textContent = `Starting in ${startRoundCountdown}...`;
             const interval = setInterval(() => {
                 startRoundCountdown--;
