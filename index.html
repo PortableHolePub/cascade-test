@@ -68,17 +68,17 @@
       margin: 1vw;
     }
     .letter.active {
-      background-color: #4caf50;
+      background-color: #4caf50; 
     }
     .letter.pile {
-      background-color: #888;
+      background-color: #888; 
     }
     .letter.selected {
       background-color: #ffa500;
     }
     #pile-container {
       display: flex;
-      flex-direction: column-reverse; /* fill from bottom up */
+      flex-direction: column-reverse; 
       border: 2px solid #333;
       width: 90vw;
       height: 60vh;
@@ -171,7 +171,7 @@
       Round: <span id="current-round">1</span>/10 &nbsp;|&nbsp; Task: <span id="current-task">1</span>/20
     </div>
     <div id="time-score-line" class="hud-line">
-      Time Left: <span id="time">10</span>s &nbsp;|&nbsp; Score: <span id="score-value">0</span>
+      Time Left: <span id="time">13</span>s &nbsp;|&nbsp; Score: <span id="score-value">0</span>
     </div>
     <div id="word-display"><span id="current-word"></span></div>
   </div>
@@ -220,28 +220,26 @@
     <div id="startup-popup-content">
       <h2>Welcome to Ana's Word Cascade Game!</h2>
       <p><strong>How to Play:</strong><br>
-      Each <strong>Round</strong> consists of a series of <strong>Tasks</strong>.<br>
-      You’ll have a limited amount of time to form words from the letters in the <strong>Active Row</strong>.<br>
-      Round 1 tasks get 13 seconds each. Round 2 tasks get 12 seconds each... and so on. After time runs out, any unused letters move to the <strong>Bin</strong>. Complete all Tasks in a Round to earn a bonus!</p>
+      Each <strong>Round</strong> has a series of <strong>Tasks</strong>.<br>
+      You have a limited time to form words from the letters in the <strong>Active Row</strong> (which are chosen randomly: 6 consonants, 4 vowels).<br>
+      Each valid word adds points. After time runs out, leftover letters move into the <strong>Bin</strong>. Complete all tasks to finish the round!</p>
+
       <p><strong>Between Rounds:</strong><br>
-      You’ll enter a <strong>Bin-Clearing Phase</strong> awarding <strong>25%</strong> of normal word score for each valid word.  
-      Clearing the Bin helps keep space free for future Rounds.</p>
+      You’ll enter <strong>Bin-Clearing Phase</strong>, awarding <strong>25%</strong> of normal word score for each valid word from the bin, removing those letters.</p>
+
       <p><strong>Game Over:</strong><br>
-      The game ends if the Bin fills up completely.<br>
+      The game ends if the bin fills up completely.<br>
       Manage your letters wisely and aim for the highest score!</p>
+
       <p>Click "Start" to begin.</p>
       <button id="start-game-button">Start</button>
     </div>
   </div>
 
   <script>
-    /* 
-      1) RANDOM TILES: 
-         6 random consonants + 4 random vowels, then shuffle 
-    */
+    /* 1) RANDOM TILES: 6 random consonants + 4 random vowels, then shuffle. */
     const vowels = ["A","E","I","O","U"];
     const consonants = "BCDFGHJKLMNPQRSTVWXYZ".split("");
-
     function getRandomElement(array){
       return array[Math.floor(Math.random()*array.length)];
     }
@@ -254,24 +252,27 @@
     }
     function generateTiles(){
       let tiles=[
-        ...Array(6).fill(null).map(()=>getRandomElement(consonants)),
-        ...Array(4).fill(null).map(()=>getRandomElement(vowels))
+        ...Array(6).fill(null).map(()=> getRandomElement(consonants)),
+        ...Array(4).fill(null).map(()=> getRandomElement(vowels))
       ];
       shuffleArray(tiles);
       return tiles;
     }
 
-    /* 
-      2) CORE GAME VARIABLES & DOM
-    */
-    let timeLeft=10, score=0;
-    let currentRound=1, currentTask=1;
-    let totalRounds=10, totalTasksPerRound=20;
+    /* 2) CORE GAME VARIABLES & DOM */
+    let timeLeft=13; /* We'll adjust each round. Round 1 => 13 seconds. */
+    let score=0;
+    let currentRound=1;
+    let currentTask=1;
+    let totalRounds=10;
+    let totalTasksPerRound=20;
     let timerInterval;
-    let isBinClearingPhase=false;
-    let binPointsChange=0, binLettersRemoved=0;
 
-    // special code: if we do a 2-letter word matching first/last letter 2 times => end round
+    let isBinClearingPhase=false;
+    let binPointsChange=0;
+    let binLettersRemoved=0;
+    
+    /* Special code: 2 times => end round, only in normal mode */
     let specialCodeCount=0;
     const SPECIAL_CODE_TIMES=2;
 
@@ -302,8 +303,8 @@
     let currentWord="";
     let selectedTiles=[];
 
-    // Word Score Calculation
-    const bonusLetters={J:5,X:5,Q:10,Z:10};
+    /* Word Score */
+    const bonusLetters={ J:5,X:5,Q:10,Z:10 };
     function calculateWordScore(word){
       let base=word.length*10;
       let bonus=0;
@@ -318,9 +319,7 @@
       return base+bonus;
     }
 
-    /* 
-      3) Setup row
-    */
+    /* 3) Setup row */
     function addRow(){
       activeRow.innerHTML="";
       let letters=generateTiles();
@@ -351,10 +350,9 @@
       });
     }
 
-    /* 
-      4) Timer & Rounds:
-         timeLeft = 14 - currentRound
-         Round 1 => 13s, Round 2 => 12s, etc.
+    /* 4) Timer & Rounds 
+       Round 1 => 13s, Round 2 => 12s, ...
+       timeLeft = (14 - currentRound)
     */
     function startTimer(){
       clearInterval(timerInterval);
@@ -380,8 +378,8 @@
         endRound();
       } else {
         taskDisplay.textContent=currentTask;
-        timeLeft=14 - currentRound; // e.g. Round 1 => 13
-        if(timeLeft<1) timeLeft=1;
+        timeLeft=14-currentRound; 
+        if(timeLeft<1) timeLeft=1; 
         addRow();
         startTimer();
         checkGameOver();
@@ -420,10 +418,13 @@
       roundDisplay.textContent=currentRound;
       currentTask=1;
       taskDisplay.textContent=currentTask;
-      timeLeft=14 - currentRound;
-      if(timeLeft<1) timeLeft=1;
-      addRow();
+
+      timeLeft=14-currentRound;
+      if(timeLeft<1) timeLeft=1; 
+      
+      // Return to normal tasks
       activeRow.style.display='flex';
+      addRow();
       startTimer();
       feedback.textContent="";
     }
@@ -432,8 +433,7 @@
       updateScore();
       currentRound=1;
       currentTask=1;
-      // Round 1 => 13 seconds
-      timeLeft=14 - currentRound; 
+      timeLeft=14-currentRound; // => 13 for round 1
       if(timeLeft<1) timeLeft=1;
 
       roundDisplay.textContent=currentRound;
@@ -447,6 +447,7 @@
       binLettersRemoved=0;
       specialCodeCount=0;
 
+      activeRow.style.display='flex';
       addRow();
       startTimer();
     }
@@ -454,7 +455,7 @@
       scoreDisplay.textContent=score;
     }
     function checkGameOver(){
-      let isPileFull = pileRows.every(row=>row.children.length>=10);
+      let isPileFull=pileRows.every(row=>row.children.length>=10);
       if(isPileFull){
         clearInterval(timerInterval);
         alert(`Game Over! The bin is full. Final Score: ${score}`);
@@ -462,10 +463,7 @@
       }
     }
 
-    /* 
-      5) Bin Clearing
-         25% points from each valid word
-    */
+    /* 5) Bin Clearing (25% points) */
     function startBinClearingPhase(){
       isBinClearingPhase=true;
       binPointsChange=0;
@@ -474,6 +472,7 @@
       timeLeft=binClearingTimeLeft;
       timeDisplay.textContent=timeLeft;
       feedback.textContent="Bin-Clearing Phase!";
+      // Hide active row in bin clearing
       activeRow.style.display='none';
       startTimer();
       pileContainer.addEventListener("click", pileClickHandler);
@@ -483,6 +482,7 @@
       pileContainer.removeEventListener("click", pileClickHandler);
       resetCurrentWord();
       feedback.textContent="";
+      // Show results, then after 10s -> startNextRound
       showBinClearingResults();
     }
     function showBinClearingResults(){
@@ -498,14 +498,12 @@
         if(startRoundCountdown<=0){
           clearInterval(interval);
           binPopup.style.display="none";
-          startNextRound();
+          startNextRound(); // Next round is normal mode
         }
       },1000);
     }
 
-    /* 
-      6) Word Validation & Special Code
-    */
+    /* 6) Word Validation & Special Code */
     async function validateWord(word){
       try{
         const response=await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`);
@@ -554,21 +552,18 @@
       return false;
     }
 
-    // Score after removing selected tiles from active row
+    // Remove selected from active row in normal mode
     function clearSelectedTiles(){
-      selectedTiles.forEach(tile=>tile.remove());
+      selectedTiles.forEach(tile=> tile.remove());
       selectedTiles=[];
     }
 
-    /* 
-      7) Click & Enter Logic
-    */
+    /* 7) Click & Enter Logic */
     // Active row click in normal mode
-    activeRow.addEventListener("click",(e)=>{
-      if(isBinClearingPhase)return;
-      if(e.target.classList.contains("letter")&&e.target.classList.contains("active")){
+    activeRow.addEventListener("click", e=>{
+      if(isBinClearingPhase) return; // ignore if in bin mode
+      if(e.target.classList.contains("letter") && e.target.classList.contains("active")){
         const tile=e.target;
-        const letter=tile.textContent;
         if(tile.classList.contains("selected")){
           if(selectedTiles[selectedTiles.length-1]===tile){
             currentWord=currentWord.slice(0,-1);
@@ -577,18 +572,17 @@
             selectedTiles.pop();
           }
         } else {
-          currentWord+=letter;
+          currentWord+=tile.textContent;
           wordDisplay.textContent=currentWord;
           tile.classList.add("selected");
           selectedTiles.push(tile);
         }
       }
     });
-    // Bin clicks
+    // Pile click in bin mode
     function pileClickHandler(e){
-      if(e.target.classList.contains("letter")&&e.target.classList.contains("pile")){
+      if(e.target.classList.contains("letter") && e.target.classList.contains("pile")){
         const tile=e.target;
-        const letter=tile.textContent;
         if(tile.classList.contains("selected")){
           if(selectedTiles[selectedTiles.length-1]===tile){
             currentWord=currentWord.slice(0,-1);
@@ -597,7 +591,7 @@
             selectedTiles.pop();
           }
         } else {
-          currentWord+=letter;
+          currentWord+=tile.textContent;
           wordDisplay.textContent=currentWord;
           tile.classList.add("selected");
           selectedTiles.push(tile);
@@ -605,6 +599,7 @@
       }
     }
 
+    // Enter button
     document.getElementById("enter-button").addEventListener("click", async ()=>{
       if(currentWord.length<3){
         showFeedback("Invalid Word","invalid");
@@ -613,11 +608,11 @@
         resetCurrentWord();
         return;
       }
-      const isValid=await validateWord(currentWord);
+      let isValid=await validateWord(currentWord);
       if(isValid){
         let wordScore=calculateWordScore(currentWord);
         if(isBinClearingPhase){
-          // 25% points in bin clearing
+          // Bin clearing => 25% points
           const binPoints=Math.floor(wordScore*0.25);
           score+=binPoints;
           binPointsChange+=binPoints;
@@ -626,6 +621,7 @@
           showFeedback(`Word Accepted! +${binPoints} points`,"correct");
           removeSelectedTilesFromPile();
         } else {
+          // Normal mode
           if(checkSpecialCode()){
             specialCodeCount++;
             if(specialCodeCount>=SPECIAL_CODE_TIMES){
@@ -660,11 +656,14 @@
     }
 
     /* 8) Startup */
-    document.getElementById("start-game-button").addEventListener("click", ()=>{
+    function updateScore(){
+      scoreDisplay.textContent=score;
+    }
+    document.getElementById("start-game-button").addEventListener("click",()=>{
       document.getElementById("startup-popup").style.display="none";
       resetGame();
     });
-    window.addEventListener("load", ()=>{
+    window.addEventListener("load",()=>{
       document.getElementById("startup-popup").style.display="flex";
     });
   </script>
