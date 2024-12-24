@@ -71,14 +71,14 @@
       background-color: #4caf50; /* Green for active row */
     }
     .letter.pile {
-      background-color: #888;    /* Gray for bin letters */
+      background-color: #888; /* Gray for bin letters */
     }
     .letter.selected {
       background-color: #ffa500;
     }
     #pile-container {
       display: flex;
-      flex-direction: column-reverse;
+      flex-direction: column-reverse; /* fill from bottom up */
       border: 2px solid #333;
       width: 90vw;
       height: 60vh;
@@ -163,8 +163,6 @@
       border-radius: 3vw;
       cursor: pointer;
     }
-
-    /* For the Game Over Popup "New Game" button */
     #new-game-button {
       font-size: 4vw;
       padding: 3vw 6vw;
@@ -197,6 +195,7 @@
     </div>
   </div>
 
+  <!-- Bin container with 10 rows -->
   <div id="pile-container">
     <div class="pile-row empty"></div>
     <div class="pile-row empty"></div>
@@ -234,7 +233,7 @@
       <h2>Welcome to Ana's Word Cascade Game!</h2>
       <p><strong>How to Play:</strong><br>
       Each <strong>Round</strong> has a series of <strong>Tasks</strong>. You have a limited time to form words from the 6 consonants + 4 vowels in the <strong>Active Row</strong>.<br>
-      Round 1 tasks => 13 seconds, Round 2 => 12 seconds, etc. Unused letters go to the <strong>Bin</strong>. Complete all tasks for a bonus!</p>
+      Round 1 => 13 seconds, Round 2 => 12 seconds, etc. Unused letters go to the <strong>Bin</strong>. Complete all tasks for a bonus!</p>
 
       <p><strong>Between Rounds:</strong><br>
       A <strong>Bin-Clearing Phase</strong> awards <strong>25%</strong> of normal word score for each word from the Bin.  
@@ -248,29 +247,27 @@
     </div>
   </div>
 
-  <!-- New Game Over Popup to show Final Score and Overall Best Score -->
+  <!-- Game Over popup -->
   <div id="game-over-popup">
     <div id="game-over-content">
-      <h2>Game Over</h2>
+      <h2>Game Over!</h2>
       <p>Final Score: <span id="final-score"></span></p>
-      <p>Overall Best Score: <span id="overall-best"></span></p>
       <button id="new-game-button">Start New Game</button>
     </div>
   </div>
 
   <script>
     /* 
-       We'll store the "overall best score" in localStorage under "bestScore"
+      1) Random tiles: 6 consonants + 4 vowels
     */
-
-    // 1) RANDOM TILE LOGIC
     const vowels = ["A","E","I","O","U"];
     const consonants = "BCDFGHJKLMNPQRSTVWXYZ".split("");
+
     function getRandomElement(array){
       return array[Math.floor(Math.random()*array.length)];
     }
     function shuffleArray(array){
-      for(let i=array.length-1; i>0;i--){
+      for(let i=array.length-1;i>0;i--){
         const j=Math.floor(Math.random()*(i+1));
         [array[i],array[j]]=[array[j],array[i]];
       }
@@ -285,11 +282,14 @@
       return tiles;
     }
 
-    // 2) CORE VARS
+    /*
+      2) Core Vars
+    */
     let timeLeft=13, score=0;
     let currentRound=1, currentTask=1;
-    const totalRounds=10, totalTasksPerRound=20;
     let timerInterval;
+    const totalRounds=10, totalTasksPerRound=20;
+
     let isBinClearingPhase=false;
     let binPointsChange=0, binLettersRemoved=0;
 
@@ -318,18 +318,18 @@
     const binPopupDetails=document.getElementById("bin-popup-details");
     const binPopupCountdown=document.getElementById("bin-popup-countdown");
 
+    const gameOverPopup=document.getElementById("game-over-popup");
+    const finalScoreSpan=document.getElementById("final-score");
+    const newGameButton=document.getElementById("new-game-button");
+
     const pileContainer=document.getElementById("pile-container");
     const pileRows=Array.from(pileContainer.children);
-
-    const gameOverPopup = document.getElementById("game-over-popup");
-    const finalScoreSpan = document.getElementById("final-score");
-    const overallBestSpan = document.getElementById("overall-best");
-    const newGameButton = document.getElementById("new-game-button");
 
     let currentWord="";
     let selectedTiles=[];
 
-    const bonusLetters={J:5, X:5, Q:10, Z:10};
+    // Word scoring logic
+    const bonusLetters={J:5,X:5,Q:10,Z:10};
     function calculateWordScore(word){
       let base=word.length*10;
       let bonus=0;
@@ -344,7 +344,9 @@
       return base+bonus;
     }
 
-    // 3) TIMERS
+    /*
+      3) Timers
+    */
     function startTimer(){
       clearInterval(timerInterval);
       timeDisplay.textContent=timeLeft;
@@ -362,7 +364,9 @@
       }
     }
 
-    // 4) ROUNDS & TASKS
+    /*
+      4) Rounds & Tasks
+    */
     function addRow(){
       activeRow.innerHTML="";
       let letters=generateTiles();
@@ -381,11 +385,11 @@
         endRound();
       } else {
         taskDisplay.textContent=currentTask;
-        timeLeft=14-currentRound;
+        timeLeft=14-currentRound; 
         if(timeLeft<1) timeLeft=1;
         addRow();
         startTimer();
-        checkGameOver();
+        checkGameOver(); 
       }
     }
     function endRound(){
@@ -414,8 +418,7 @@
     function startNextRound(){
       currentRound++;
       if(currentRound>totalRounds){
-        // All rounds done => game over
-        gameOver(`All ${totalRounds} rounds completed!`);
+        gameOver(`All rounds done! Final Score: ${score}`);
         return;
       }
       roundDisplay.textContent=currentRound;
@@ -430,7 +433,9 @@
       feedback.textContent="";
     }
 
-    // 5) BIN CLEARNING
+    /*
+      5) Bin Clearing Phase
+    */
     function startBinClearingPhase(){
       isBinClearingPhase=true;
       binPointsChange=0;
@@ -463,12 +468,16 @@
         if(countdown<=0){
           clearInterval(interval);
           binPopup.style.display="none";
+          checkGameOver(); // check if bin is full after clearing
           startNextRound();
         }
       },1000);
     }
 
-    // 6) SHIFT TILES => BIN
+    /*
+      6) SHIFT TILES => BIN
+         (Key fix) We call checkGameOver() after adding tiles
+    */
     function moveUnusedToPile(){
       let unused=Array.from(activeRow.children).filter(t=>!t.classList.contains("selected"));
       addToPile(unused);
@@ -483,23 +492,34 @@
             copy.classList.add("pile");
             pileRows[rowIndex].classList.remove("empty");
             pileRows[rowIndex].appendChild(copy);
+            // After placing, check if bin is full
+            checkGameOver(); 
             break;
           }
         }
       });
     }
 
-    // 7) Validation (Dictionary) if you want to add it, do so. 
-    //    For now, we skip or we do a partial check. We keep it as is if you want dictionary usage.
-
-    // 8) GAME OVER
+    /*
+      7) Game Over
+    */
     function gameOver(reason=""){
       clearInterval(timerInterval);
-      // Show final score on the new game over page
-      showGameOverPage();
+      // Show final score in the Game Over popup
+      finalScoreSpan.textContent = score;
+      gameOverPopup.style.display="flex";
     }
 
-    // 9) ROW CLEAR
+    function checkGameOver(){
+      let isPileFull = pileRows.every(row=> row.children.length>=10);
+      if(isPileFull){
+        gameOver(`The bin is full! Final Score: ${score}`);
+      }
+    }
+
+    /*
+      8) Row Clear
+    */
     function checkIfRowCleared(){
       if(!activeRow.children.length){
         score+=30;
@@ -508,7 +528,9 @@
       }
     }
 
-    // 10) CHEAT CODE
+    /*
+      9) Cheat Code
+    */
     function checkSpecialCode(){
       if(isBinClearingPhase)return false;
       if(currentWord.length===2){
@@ -522,7 +544,9 @@
       return false;
     }
 
-    // 11) UTILS
+    /*
+      10) Utils
+    */
     function resetCurrentWord(){
       currentWord="";
       wordDisplay.textContent=currentWord;
@@ -557,7 +581,9 @@
       scoreDisplay.textContent=score;
     }
 
-    // 12) Enter Button
+    /*
+      11) Enter logic
+    */
     document.getElementById("enter-button").addEventListener("click", ()=>{
       if(currentWord.length<3){
         showFeedback("Invalid Word","invalid");
@@ -566,17 +592,17 @@
         resetCurrentWord();
         return;
       }
-      // If bin clearing => 25%
       if(isBinClearingPhase){
         let wordScore=calculateWordScore(currentWord);
-        score+=Math.floor(wordScore*0.25);
-        binPointsChange+=Math.floor(wordScore*0.25);
+        let binPoints=Math.floor(wordScore*0.25);
+        score+=binPoints;
+        binPointsChange+=binPoints;
         binLettersRemoved+=selectedTiles.length;
         updateScore();
-        showFeedback(`Word Accepted! +${Math.floor(wordScore*0.25)} points`,"correct");
+        showFeedback(`Word Accepted! +${binPoints} points`, "correct");
         removeSelectedTilesFromPile();
       } else {
-        // Normal mode => check cheat code
+        // Normal mode => cheat code
         if(checkSpecialCode()){
           specialCodeCount++;
           if(specialCodeCount>=SPECIAL_CODE_TIMES){
@@ -588,7 +614,6 @@
         } else {
           specialCodeCount=0;
         }
-        // Normal scoring
         let wordScore=calculateWordScore(currentWord);
         score+=wordScore;
         updateScore();
@@ -599,7 +624,9 @@
       resetCurrentWord();
     });
 
-    // 13) BIN MODE CLICK
+    /*
+      12) Bin & Active Row Click
+    */
     function binClickHandler(e){
       if(e.target.classList.contains("letter") && e.target.classList.contains("pile")){
         let tile=e.target;
@@ -619,7 +646,6 @@
       }
     }
 
-    // 14) Active Row Click
     activeRow.addEventListener("click",(e)=>{
       if(isBinClearingPhase)return;
       if(e.target.classList.contains("letter") && e.target.classList.contains("active")){
@@ -640,7 +666,9 @@
       }
     });
 
-    // 15) Startup & Reset
+    /*
+      13) Startup
+    */
     function resetGame(){
       score=0;
       updateScore();
@@ -652,12 +680,13 @@
       roundDisplay.textContent=currentRound;
       taskDisplay.textContent=currentTask;
 
+      // Clear bin
       pileRows.forEach(row=>{
         row.innerHTML="";
         row.classList.add("empty");
       });
       isBinClearingPhase=false;
-      binPointsChange=0; 
+      binPointsChange=0;
       binLettersRemoved=0;
       specialCodeCount=0;
 
@@ -667,53 +696,17 @@
       feedback.textContent="";
     }
 
-    // Show the startup popup on load
-    window.addEventListener("load", ()=>{
+    window.addEventListener("load",()=>{
       document.getElementById("startup-popup").style.display="flex";
     });
-
-    // "Start" button from the startup popup
     document.getElementById("start-game-button").addEventListener("click", ()=>{
       document.getElementById("startup-popup").style.display="none";
       resetGame();
     });
 
-    /*****************************************************
-      16) New "Game Over" Page
-          - Show Final Score
-          - Show Overall Best Score (from localStorage)
-          - Provide "Start New Game" button
-    *****************************************************/
-    function showGameOverPage(){
-      // 1) Hide all other overlays
-      popup.style.display="none";
-      binPopup.style.display="none";
-      // 2) Update final score
-      finalScoreSpan.textContent = score;
-
-      // 3) Check localStorage for bestScore
-      let bestScore = parseInt(localStorage.getItem("bestScore")||"0");
-      if(score>bestScore){
-        bestScore=score;
-        localStorage.setItem("bestScore", bestScore);
-      }
-      overallBestSpan.textContent = bestScore;
-
-      // 4) Show the game-over popup
-      gameOverPopup.style.display="flex";
-    }
-
-    // Called whenever the game truly ends (bin full or all rounds done)
-    function gameOver(reason=""){
-      clearInterval(timerInterval);
-      showGameOverPage();
-    }
-
-    // "New Game" button on the game over popup
+    // 14) For final "Game Over" popup
     newGameButton.addEventListener("click", ()=>{
-      // Hide the game over popup
       gameOverPopup.style.display="none";
-      // Start a brand new game
       resetGame();
     });
   </script>
