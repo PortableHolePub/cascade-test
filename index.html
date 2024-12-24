@@ -68,10 +68,10 @@
       margin: 1vw;
     }
     .letter.active {
-      background-color: #4caf50; /* Green for active row letters */
+      background-color: #4caf50;
     }
     .letter.pile {
-      background-color: #888; /* Gray for bin letters */
+      background-color: #888;
     }
     .letter.selected {
       background-color: #ffa500;
@@ -221,47 +221,49 @@
       <h2>Welcome to Ana's Word Cascade Game!</h2>
       <p><strong>How to Play:</strong><br>
       Each <strong>Round</strong> consists of a series of <strong>Tasks</strong>.<br>
-      In each Task, you’ll have a limited amount of time to form words from the letters in the <strong>Active Row</strong>.<br>
-      The longer your word and the rarer the letters, the more points you earn! After time runs out, any unused letters are moved into the <strong>Bin</strong> (pile). Complete all Tasks in a Round to earn a bonus!</p>
-
+      You’ll have a limited amount of time to form words from the letters in the <strong>Active Row</strong>.<br>
+      Round 1 tasks get 13 seconds each. Round 2 tasks get 12 seconds each... and so on. After time runs out, any unused letters move to the <strong>Bin</strong>. Complete all Tasks in a Round to earn a bonus!</p>
       <p><strong>Between Rounds:</strong><br>
-      You’ll enter a <strong>Bin-Clearing Phase</strong> where each valid word yields <strong>25%</strong> of its normal score in points.  
+      You’ll enter a <strong>Bin-Clearing Phase</strong> awarding <strong>25%</strong> of normal word score for each valid word.  
       Clearing the Bin helps keep space free for future Rounds.</p>
-
       <p><strong>Game Over:</strong><br>
       The game ends if the Bin fills up completely.<br>
       Manage your letters wisely and aim for the highest score!</p>
-
       <p>Click "Start" to begin.</p>
       <button id="start-game-button">Start</button>
     </div>
   </div>
 
   <script>
-    /* 1) RANDOM TILES (6 consonants + 4 vowels, shuffle) */
+    /* 
+      1) RANDOM TILES: 
+         6 random consonants + 4 random vowels, then shuffle 
+    */
     const vowels = ["A","E","I","O","U"];
     const consonants = "BCDFGHJKLMNPQRSTVWXYZ".split("");
+
     function getRandomElement(array){
       return array[Math.floor(Math.random()*array.length)];
     }
     function shuffleArray(array){
       for(let i=array.length-1; i>0; i--){
         const j=Math.floor(Math.random()*(i+1));
-        [array[i], array[j]]=[array[j], array[i]];
+        [array[i], array[j]]=[array[j],array[i]];
       }
       return array;
     }
     function generateTiles(){
-      // 6 random consonants + 4 random vowels
-      let tiles = [
-        ...Array(6).fill(null).map(()=> getRandomElement(consonants)),
-        ...Array(4).fill(null).map(()=> getRandomElement(vowels))
+      let tiles=[
+        ...Array(6).fill(null).map(()=>getRandomElement(consonants)),
+        ...Array(4).fill(null).map(()=>getRandomElement(vowels))
       ];
       shuffleArray(tiles);
       return tiles;
     }
 
-    /* 2) CORE GAME VARIABLES & DOM */
+    /* 
+      2) CORE GAME VARIABLES & DOM
+    */
     let timeLeft=10, score=0;
     let currentRound=1, currentTask=1;
     let totalRounds=10, totalTasksPerRound=20;
@@ -269,7 +271,7 @@
     let isBinClearingPhase=false;
     let binPointsChange=0, binLettersRemoved=0;
 
-    // special code: 2 times => end round
+    // special code: if we do a 2-letter word matching first/last letter 2 times => end round
     let specialCodeCount=0;
     const SPECIAL_CODE_TIMES=2;
 
@@ -279,7 +281,7 @@
     const taskDisplay=document.getElementById("current-task");
     const timeDisplay=document.getElementById("time");
     const scoreDisplay=document.getElementById("score-value");
-    const wordDisplay=document.getElementById("current-word") || {textContent:""};
+    const wordDisplay=document.getElementById("current-word");
 
     const popup=document.getElementById("popup");
     const popupMessage=document.getElementById("popup-message");
@@ -300,23 +302,25 @@
     let currentWord="";
     let selectedTiles=[];
 
-    // Word score
-    const bonusLetters={ J:5, X:5, Q:10, Z:10 };
+    // Word Score Calculation
+    const bonusLetters={J:5,X:5,Q:10,Z:10};
     function calculateWordScore(word){
-      let baseScore=word.length*10;
-      let bonusScore=0;
+      let base=word.length*10;
+      let bonus=0;
       for(let ch of word.toUpperCase()){
-        bonusScore+=(bonusLetters[ch]||0);
+        bonus+=(bonusLetters[ch]||0);
       }
-      if(word.length===10) bonusScore+=50;
-      else if(word.length===9) bonusScore+=40;
-      else if(word.length===8) bonusScore+=30;
-      else if(word.length===7) bonusScore+=20;
-      else if(word.length===6) bonusScore+=10;
-      return baseScore+bonusScore;
+      if(word.length===10) bonus+=50;
+      else if(word.length===9) bonus+=40;
+      else if(word.length===8) bonus+=30;
+      else if(word.length===7) bonus+=20;
+      else if(word.length===6) bonus+=10;
+      return base+bonus;
     }
 
-    /* 3) Setup row */
+    /* 
+      3) Setup row
+    */
     function addRow(){
       activeRow.innerHTML="";
       let letters=generateTiles();
@@ -347,9 +351,10 @@
       });
     }
 
-    /* 4) Timer & Rounds:
-          timeLeft = (14 - currentRound)
-          Round 1 => 13s, Round 2 => 12s, etc.
+    /* 
+      4) Timer & Rounds:
+         timeLeft = 14 - currentRound
+         Round 1 => 13s, Round 2 => 12s, etc.
     */
     function startTimer(){
       clearInterval(timerInterval);
@@ -375,8 +380,8 @@
         endRound();
       } else {
         taskDisplay.textContent=currentTask;
-        timeLeft=14 - currentRound; // e.g. Round 1 => 13s
-        if(timeLeft<1) timeLeft=1; // clamp if needed
+        timeLeft=14 - currentRound; // e.g. Round 1 => 13
+        if(timeLeft<1) timeLeft=1;
         addRow();
         startTimer();
         checkGameOver();
@@ -425,9 +430,12 @@
     function resetGame(){
       score=0;
       updateScore();
-      timeLeft=10;
       currentRound=1;
       currentTask=1;
+      // Round 1 => 13 seconds
+      timeLeft=14 - currentRound; 
+      if(timeLeft<1) timeLeft=1;
+
       roundDisplay.textContent=currentRound;
       taskDisplay.textContent=currentTask;
       pileRows.forEach(row=>{
@@ -438,6 +446,7 @@
       binPointsChange=0;
       binLettersRemoved=0;
       specialCodeCount=0;
+
       addRow();
       startTimer();
     }
@@ -445,7 +454,7 @@
       scoreDisplay.textContent=score;
     }
     function checkGameOver(){
-      let isPileFull=pileRows.every(row=>row.children.length>=10);
+      let isPileFull = pileRows.every(row=>row.children.length>=10);
       if(isPileFull){
         clearInterval(timerInterval);
         alert(`Game Over! The bin is full. Final Score: ${score}`);
@@ -453,12 +462,15 @@
       }
     }
 
-    /* 5) Bin Clearing Phase (25% points) */
+    /* 
+      5) Bin Clearing
+         25% points from each valid word
+    */
     function startBinClearingPhase(){
       isBinClearingPhase=true;
       binPointsChange=0;
       binLettersRemoved=0;
-      binClearingTimeLeft=30;
+      let binClearingTimeLeft=30;
       timeLeft=binClearingTimeLeft;
       timeDisplay.textContent=timeLeft;
       feedback.textContent="Bin-Clearing Phase!";
@@ -474,30 +486,31 @@
       showBinClearingResults();
     }
     function showBinClearingResults(){
-      document.getElementById("bin-popup-message").textContent="Congratulations!";
-      document.getElementById("bin-popup-details").textContent=`You added ${binPointsChange} points and removed ${binLettersRemoved} letters.\nRound ${currentRound+1} starts soon!`;
-      document.getElementById("bin-popup").style.display="flex";
+      binPopupMessage.textContent="Congratulations!";
+      binPopupDetails.textContent=`You added ${binPointsChange} points and removed ${binLettersRemoved} letters.\nRound ${currentRound+1} starts soon!`;
+      binPopup.style.display="flex";
 
       let startRoundCountdown=10;
-      document.getElementById("bin-popup-countdown").textContent=`Starting in ${startRoundCountdown}...`;
+      binPopupCountdown.textContent=`Starting in ${startRoundCountdown}...`;
       const interval=setInterval(()=>{
         startRoundCountdown--;
-        document.getElementById("bin-popup-countdown").textContent=`Starting in ${startRoundCountdown}...`;
+        binPopupCountdown.textContent=`Starting in ${startRoundCountdown}...`;
         if(startRoundCountdown<=0){
           clearInterval(interval);
-          document.getElementById("bin-popup").style.display="none";
+          binPopup.style.display="none";
           startNextRound();
         }
       },1000);
     }
 
-    /* 6) Word Validation & Special Code */
-    const bonusLetters={ J:5, X:5, Q:10, Z:10 };
+    /* 
+      6) Word Validation & Special Code
+    */
     async function validateWord(word){
       try{
         const response=await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`);
         return response.ok;
-      }catch(error){
+      } catch(error){
         console.error("Error validating word:",error);
         return false;
       }
@@ -528,12 +541,6 @@
       feedback.className=type;
       setTimeout(()=> (feedback.textContent=""),2000);
     }
-    let currentWord="";
-    let selectedTiles=[];
-    function clearSelectedTiles(){
-      selectedTiles.forEach(tile=>tile.remove());
-      selectedTiles=[];
-    }
     function checkSpecialCode(){
       if(isBinClearingPhase)return false;
       if(currentWord.length===2){
@@ -547,8 +554,16 @@
       return false;
     }
 
-    /* 7) Click/Enter Logic */
-    // Active row clicks in normal mode
+    // Score after removing selected tiles from active row
+    function clearSelectedTiles(){
+      selectedTiles.forEach(tile=>tile.remove());
+      selectedTiles=[];
+    }
+
+    /* 
+      7) Click & Enter Logic
+    */
+    // Active row click in normal mode
     activeRow.addEventListener("click",(e)=>{
       if(isBinClearingPhase)return;
       if(e.target.classList.contains("letter")&&e.target.classList.contains("active")){
@@ -569,7 +584,7 @@
         }
       }
     });
-    // Pile click during bin clearing
+    // Bin clicks
     function pileClickHandler(e){
       if(e.target.classList.contains("letter")&&e.target.classList.contains("pile")){
         const tile=e.target;
@@ -589,7 +604,7 @@
         }
       }
     }
-    // Enter
+
     document.getElementById("enter-button").addEventListener("click", async ()=>{
       if(currentWord.length<3){
         showFeedback("Invalid Word","invalid");
@@ -602,7 +617,7 @@
       if(isValid){
         let wordScore=calculateWordScore(currentWord);
         if(isBinClearingPhase){
-          // 25% points
+          // 25% points in bin clearing
           const binPoints=Math.floor(wordScore*0.25);
           score+=binPoints;
           binPointsChange+=binPoints;
@@ -611,7 +626,6 @@
           showFeedback(`Word Accepted! +${binPoints} points`,"correct");
           removeSelectedTilesFromPile();
         } else {
-          // Normal mode
           if(checkSpecialCode()){
             specialCodeCount++;
             if(specialCodeCount>=SPECIAL_CODE_TIMES){
@@ -637,12 +651,20 @@
       resetCurrentWord();
     });
 
+    function checkIfRowCleared(){
+      if(!activeRow.children.length){
+        score+=30;
+        updateScore();
+        showFeedback("Row Cleared! +30 points!","correct");
+      }
+    }
+
     /* 8) Startup */
-    document.getElementById("start-game-button").addEventListener("click",()=>{
+    document.getElementById("start-game-button").addEventListener("click", ()=>{
       document.getElementById("startup-popup").style.display="none";
       resetGame();
     });
-    window.addEventListener("load",()=>{
+    window.addEventListener("load", ()=>{
       document.getElementById("startup-popup").style.display="flex";
     });
   </script>
