@@ -645,7 +645,7 @@
         // Validate with dictionary
         let valid=await validateWord(currentWord);
         if(!valid){
-          showFeedback("Invalid Word (dictionary says no)", "invalid");
+          showFeedback("Invalid Word", "invalid");
           deselectTiles();
           resetCurrentWord();
           return;
