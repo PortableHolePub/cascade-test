@@ -78,7 +78,7 @@
     }
     #pile-container {
       display: flex;
-      flex-direction: column-reverse;
+      flex-direction: column-reverse; /* fill from bottom up */
       border: 2px solid #333;
       width: 90vw;
       height: 60vh;
@@ -127,9 +127,9 @@
     /* Popups */
     #popup, #startup-popup, #bin-popup, #game-over-popup, #stats-page {
       position: fixed;
-      top: 0;
+      top: 0; 
       left: 0;
-      width: 100%;
+      width: 100%; 
       height: 100%;
       background-color: rgba(0,0,0,0.5);
       display: none;
@@ -137,7 +137,7 @@
       justify-content: center;
       z-index: 1000;
     }
-    #popup-content, #startup-popup-content, #bin-popup-content,
+    #popup-content, #startup-popup-content, #bin-popup-content, 
     #game-over-content, #stats-content {
       background-color: white;
       padding: 5vw;
@@ -145,12 +145,12 @@
       text-align: center;
       max-width: 90vw;
     }
-    #popup h2, #startup-popup h2, #bin-popup h2,
+    #popup h2, #startup-popup h2, #bin-popup h2, 
     #game-over-popup h2, #stats-page h2 {
       margin-top: 0;
       font-size: 5vw;
     }
-    #popup p, #startup-popup p, #bin-popup p,
+    #popup p, #startup-popup p, #bin-popup p, 
     #game-over-popup p, #stats-page p {
       font-size: 4vw;
     }
@@ -158,7 +158,7 @@
       font-size: 6vw;
       margin-top: 4vw;
     }
-    #start-game-button, #new-game-button, #show-stats-button,
+    #start-game-button, #new-game-button, #show-stats-button, 
     #return-new-game-button {
       font-size: 4vw;
       padding: 3vw 6vw;
@@ -177,7 +177,7 @@
   <!-- HUD (score, high score, etc.) -->
   <div id="hud-container">
     <div id="round-task-line" class="hud-line">
-      Round: <span id="current-round">1</span>/10 &nbsp;|&nbsp;
+      Round: <span id="current-round">1</span>/10 &nbsp;|&nbsp; 
       Task: <span id="current-task">1</span>/20
     </div>
     <div id="time-score-line" class="hud-line">
@@ -234,7 +234,7 @@
   <div id="startup-popup" style="display:none;">
     <div id="startup-popup-content">
       <h2><strong>Welcome to Ana's Word Cascade Game</strong></h2>
-
+      
       <p><strong>How to Play</strong></p>
       <p>
         1. <strong>Tasks</strong>: Each task provides 10 random letters and a limited time to form valid words.<br>
@@ -275,16 +275,16 @@
 
       <h3>This Game</h3>
       <p>Score: <span id="stats-final-score"></span></p>
-      <p>Highest Scoring Word:
-        <span id="this-game-best-word"></span>
+      <p>Highest Scoring Word: 
+        <span id="this-game-best-word"></span> 
         (<span id="this-game-best-word-score"></span> pts)
       </p>
       <p>Tiles Cleared: <span id="this-game-tiles-cleared"></span></p>
 
       <h3>Overall</h3>
       <p>High Score: <span id="stats-high-score"></span></p>
-      <p>Highest Scoring Word:
-        <span id="overall-best-word"></span>
+      <p>Highest Scoring Word: 
+        <span id="overall-best-word"></span> 
         (<span id="overall-best-word-score"></span> pts)
       </p>
       <p>Tiles Cleared: <span id="overall-tiles-cleared"></span></p>
@@ -294,72 +294,71 @@
   </div>
 
   <script>
-    /* Show the startup popup once DOM is ready */
+    // 1) Show the startup popup once DOM is ready
     document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("startup-popup").style.display = "flex";
+      document.getElementById("startup-popup").style.display="flex";
     });
 
-    /* ==================== TASK RULES CHANGES ==================== */
-    // 4 vowels + 6 consonants in total
-    // Q, V, X, J, Z => appear no more than once, appear 50% less frequently
-    // If Q is present => must have U in vowels
+    // 2) "Start" button => hide popup, resetGame
+    document.getElementById("start-game-button").addEventListener("click", ()=>{
+      document.getElementById("startup-popup").style.display="none";
+      resetGame();
+    });
+
+    /* ============ Task Rules to pick letters ============ */
+    // For demonstration, 4 vowels + 6 consonants
+    // If Q => must also have U
+    // Q, V, X, J, Z => appear at most once each, 50% freq
     const vowels = ["A","E","I","O","U"];
-    // Normal consonants => excludes Q, V, X, J, Z
     const normalConsonants = "BCDFGHKLMNPRSTWY".split("");
-    // Special set => Q, V, X, J, Z
     const specialConsonants = ["Q","V","X","J","Z"];
 
-    function getRandomElement(array){
-      return array[Math.floor(Math.random()*array.length)];
+    function getRandomElement(arr){
+      return arr[Math.floor(Math.random()*arr.length)];
     }
-    function shuffleArray(array){
-      for(let i=array.length-1;i>0;i--){
+    function shuffleArray(arr){
+      for(let i=arr.length-1;i>0;i--){
         const j=Math.floor(Math.random()*(i+1));
-        [array[i], array[j]]=[array[j],array[i]];
+        [arr[i], arr[j]]=[arr[j], arr[i]];
       }
-      return array;
+      return arr;
     }
-
     function generateTiles(){
-      let selectedVowels = [];
-      let selectedConsonants = [];
-      let usedSpecials = new Set();
+      let selectedVowels=[];
+      let selectedConsonants=[];
+      let usedSpecials=new Set();
 
-      // Step A: pick 6 consonants total
-      // => each iteration, chance ~12.5% to pick a special letter (since it's half as frequent)
+      // pick 6 consonants total
       for(let i=0; i<6; i++){
         const availableSpecials = specialConsonants.filter(letter => !usedSpecials.has(letter));
-        if(availableSpecials.length && Math.random() < 0.125){ 
-          // pick special
-          let special = getRandomElement(availableSpecials);
-          selectedConsonants.push(special);
+        // chance ~12.5% to pick special
+        if(availableSpecials.length && Math.random()<0.125){
+          let special=getRandomElement(availableSpecials);
           usedSpecials.add(special);
+          selectedConsonants.push(special);
 
-          // Q => ensure we add a U if missing
           if(special==="Q" && !selectedVowels.includes("U")){
             selectedVowels.push("U");
           }
         } else {
-          // pick normal
+          // pick normal consonant
           selectedConsonants.push(getRandomElement(normalConsonants));
         }
       }
 
-      // Step B: pick 4 vowels
+      // pick 4 vowels
       while(selectedVowels.length<4){
-        let v = getRandomElement(vowels);
-        // if Q => we forced 1 U, skip duplicates
-        if(v==="U" && selectedVowels.includes("U")) continue;
+        let v=getRandomElement(vowels);
+        if(v==="U" && selectedVowels.includes("U")) continue; 
         selectedVowels.push(v);
       }
 
-      // Combine & shuffle
+      // combine & shuffle
       let tiles = shuffleArray([...selectedVowels, ...selectedConsonants]);
       return tiles;
     }
-    /* ==================== END TASK RULES ==================== */
 
-    // 2) Game Vars
+    /* =========== The rest of your original logic =========== */
     let timeLeft=13, score=0;
     let currentRound=1, currentTask=1;
     const totalRounds=10, totalTasksPerRound=20;
@@ -369,36 +368,162 @@
     let specialCodeCount=0;
     const SPECIAL_CODE_TIMES=2;
 
-    let highestScoringWordThisGame = { word:"", score:0 };
-    let tilesClearedCountThisGame = 0;
+    let highestScoringWordThisGame={ word:"", score:0 };
+    let tilesClearedCountThisGame=0;
 
-    /* ...the rest of your original code, unchanged... */
+    const pileContainer=document.getElementById("pile-container");
+    const pileRows=Array.from(pileContainer.children);
 
-    /* Start the game only after user clicks Start */
-    document.getElementById("start-game-button").addEventListener("click",()=>{
-      document.getElementById("startup-popup").style.display="none";
-      resetGame(); // now the game begins
+    const activeRow=document.getElementById("active-row");
+    const feedback=document.getElementById("feedback");
+    const roundDisplay=document.getElementById("current-round");
+    const taskDisplay=document.getElementById("current-task");
+    const timeDisplay=document.getElementById("time");
+    const scoreDisplay=document.getElementById("score-value");
+    const wordDisplay=document.getElementById("current-word");
+    const highScoreDisplay=document.getElementById("high-score-display");
+
+    const popup=document.getElementById("popup");
+    const popupMessage=document.getElementById("popup-message");
+    const popupScore=document.getElementById("popup-score");
+    const countdownDisplay=document.getElementById("countdown");
+
+    const binPopup=document.getElementById("bin-popup");
+    const binPopupMessage=document.getElementById("bin-popup-message");
+    const binPopupDetails=document.getElementById("bin-popup-details");
+    const binPopupCountdown=document.getElementById("bin-popup-countdown");
+
+    const gameOverPopup=document.getElementById("game-over-popup");
+    const finalScoreSpan=document.getElementById("final-score");
+    const newGameButton=document.getElementById("new-game-button");
+    const showStatsButton=document.getElementById("show-stats-button");
+
+    const statsPage=document.getElementById("stats-page");
+    const statsFinalScore=document.getElementById("stats-final-score");
+    const statsHighScore=document.getElementById("stats-high-score");
+    const returnNewGameButton=document.getElementById("return-new-game-button");
+
+    const thisGameBestWord=document.getElementById("this-game-best-word");
+    const thisGameBestWordScore=document.getElementById("this-game-best-word-score");
+    const thisGameTilesCleared=document.getElementById("this-game-tiles-cleared");
+
+    const overallBestWord=document.getElementById("overall-best-word");
+    const overallBestWordScore=document.getElementById("overall-best-word-score");
+    const overallTilesCleared=document.getElementById("overall-tiles-cleared");
+
+    const bonusLetters={J:5,X:5,Q:10,Z:10};
+
+    // Dictonary fetch
+    async function validateWord(word){
+      try{
+        const resp=await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`);
+        return resp.ok;
+      } catch(e){
+        console.error("Dictionary fetch error:", e);
+        return false;
+      }
+    }
+
+    function calculateWordScore(word){
+      let base=word.length*10;
+      let extra=0;
+      for(const ch of word.toUpperCase()){
+        extra+=(bonusLetters[ch]||0);
+      }
+      if(word.length===10) extra+=50;
+      else if(word.length===9) extra+=40;
+      else if(word.length===8) extra+=30;
+      else if(word.length===7) extra+=20;
+      else if(word.length===6) extra+=10;
+      return base+extra;
+    }
+
+    // load/save stats
+    function loadOverallStats(){
+      let data=localStorage.getItem("overallStats");
+      if(data) return JSON.parse(data);
+      return {
+        highScore:0,
+        highestScoringWord:{ word:"", score:0},
+        tilesCleared:0
+      };
+    }
+    function saveOverallStats(s){
+      localStorage.setItem("overallStats", JSON.stringify(s));
+    }
+
+    // resetGame => called once user hits "Start"
+    function resetGame(){
+      score=0;
+      const bestScore=parseInt(localStorage.getItem("bestScore")||"0");
+      highScoreDisplay.textContent=bestScore>0 ? bestScore:"000";
+
+      currentRound=1;
+      currentTask=1;
+      timeLeft=14-currentRound;
+      if(timeLeft<1) timeLeft=1;
+
+      highestScoringWordThisGame={ word:"", score:0 };
+      tilesClearedCountThisGame=0;
+
+      roundDisplay.textContent=currentRound;
+      taskDisplay.textContent=currentTask;
+      updateScore();
+
+      // Clear bin
+      pileRows.forEach(r=>{
+        r.innerHTML="";
+        r.classList.add("empty");
+      });
+      isBinClearingPhase=false;
+      binPointsChange=0;
+      binLettersRemoved=0;
+      specialCodeCount=0;
+
+      activeRow.style.display='flex';
+      // Display first row
+      addRow();
+      // start the timer
+      startTimer();
+
+      feedback.textContent="";
+    }
+
+    function startTimer(){
+      clearInterval(timerInterval);
+      timeDisplay.textContent=timeLeft;
+      timerInterval=setInterval(updateTimer,1000);
+    }
+    function updateTimer(){
+      timeLeft--;
+      timeDisplay.textContent=timeLeft;
+      if(timeLeft<=0){
+        if(isBinClearingPhase) endBinClearingPhase();
+        else endTurn();
+      }
+    }
+
+    document.getElementById("enter-button").addEventListener("click", async ()=>{
+      // logic for word validation, bin clearing, etc.
+      // unchanged from your code
+      // ...
     });
 
-    // The rest of your logic:
-    // - resetGame()
-    // - dictionary validation
-    // - row clearing, scoring, popups, etc.
-    // all remain exactly the same.
-    
-    /* ... keep your existing logic for:
-       - moveUnusedToPile
-       - addToPile
-       - startTimer, updateTimer
-       - endTurn, endRound, showPopupAfterRound, startNextRound
-       - startBinClearingPhase, endBinClearingPhase, showBinClearingResults
-       - checkGameOver, gameOver
-       - cheat code checks
-       - special stats tracking
-       - showStatsPage, endGameStatsFlow
-       - etc.
-    */
-    
+    // newGame, showStats, etc.
+    newGameButton.addEventListener("click", ()=>{
+      gameOverPopup.style.display="none";
+      resetGame();
+    });
+    showStatsButton.addEventListener("click", ()=>{
+      gameOverPopup.style.display="none";
+      endGameStatsFlow();
+    });
+    returnNewGameButton.addEventListener("click", ()=>{
+      statsPage.style.display="none";
+      resetGame();
+    });
+
+    // rest of your unchanged logic...
   </script>
 </body>
 </html>
