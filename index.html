@@ -123,6 +123,7 @@
       flex-direction: column;
       align-items: center;
     }
+    /* Popup styles */
     #startup-popup {
       display: none;
       position: fixed;
@@ -209,6 +210,7 @@
   </div>
 
   <script>
+    // Initialize the game
     const vowels = ["A", "E", "I", "O", "U"];
     const consonants = "BCDFGHJKLMNPQRSTVWXYZ".split("");
     const specialLetters = ["Q", "Z", "J", "X"];
@@ -270,7 +272,25 @@
       return tiles;
     }
 
-    console.log(generateTiles());
+    // Start button functionality
+    document.addEventListener("DOMContentLoaded", () => {
+      const startupPopup = document.getElementById("startup-popup");
+      const startGameButton = document.getElementById("start-game-button");
+
+      // Show the startup popup
+      startupPopup.style.display = "flex";
+
+      // Start the game on button click
+      startGameButton.addEventListener("click", () => {
+        startupPopup.style.display = "none";
+        startGame();
+      });
+    });
+
+    function startGame() {
+      console.log("Game started!");
+      console.log(generateTiles());
+    }
   </script>
 </body>
 </html>
