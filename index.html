@@ -68,10 +68,10 @@
       margin: 1vw;
     }
     .letter.active {
-      background-color: #4caf50;
+      background-color: #4caf50; /* Green for active row */
     }
     .letter.pile {
-      background-color: #888;
+      background-color: #888;    /* Gray for bin letters */
     }
     .letter.selected {
       background-color: #ffa500;
@@ -230,7 +230,7 @@
     </div>
   </div>
 
-  <!-- Startup popup => text remains the same -->
+  <!-- Startup popup => NEW TEXT -->
   <div id="startup-popup" style="display:none;">
     <div id="startup-popup-content">
       <h2><strong>Welcome to Ana's Word Cascade Game</strong></h2>
@@ -294,71 +294,81 @@
   </div>
 
   <script>
-    // 1) Show the startup popup once DOM is ready
-    document.addEventListener("DOMContentLoaded", () => {
+    // Show the startup popup once DOM is ready
+    document.addEventListener("DOMContentLoaded", ()=>{
       document.getElementById("startup-popup").style.display="flex";
     });
 
-    // 2) "Start" button => hide popup, resetGame
-    document.getElementById("start-game-button").addEventListener("click", ()=>{
-      document.getElementById("startup-popup").style.display="none";
-      resetGame();
-    });
+// ===================== UPDATED LETTER CHOICE =====================
 
-    /* ============ Task Rules to pick letters ============ */
-    // For demonstration, 4 vowels + 6 consonants
-    // If Q => must also have U
-    // Q, V, X, J, Z => appear at most once each, 50% freq
-    const vowels = ["A","E","I","O","U"];
-    const normalConsonants = "BCDFGHKLMNPRSTWY".split("");
-    const specialConsonants = ["Q","V","X","J","Z"];
+// We want 4 vowels + 6 consonants in total
+// Q, V, X, J, Z => appear at most once each, 50% frequency
+// If Q is present => must have U in vowels
 
-    function getRandomElement(arr){
-      return arr[Math.floor(Math.random()*arr.length)];
-    }
-    function shuffleArray(arr){
-      for(let i=arr.length-1;i>0;i--){
-        const j=Math.floor(Math.random()*(i+1));
-        [arr[i], arr[j]]=[arr[j], arr[i]];
+// Adjusted consonant lists:
+const vowels = ["A","E","I","O","U"];
+// "normalConsonants" excludes Q, V, X, J, Z
+const normalConsonants = "BCDFGHKLMNPRSTWY".split("");
+// "specialConsonants" are the 5 special ones
+const specialConsonants = ["Q","V","X","J","Z"];
+
+// Return a random element from an array
+function getRandomElement(arr){
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// Shuffle the array in-place
+function shuffleArray(arr){
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function generateTiles(){
+  let selectedVowels = [];
+  let selectedConsonants = [];
+  let usedSpecials = new Set();
+
+  // We pick 6 consonants total:
+  // each iteration => ~12.5% chance to pick a special (making them 50% freq)
+  for(let i=0; i<6; i++){
+    // find which specials aren’t used yet
+    const availableSpecials = specialConsonants.filter(
+      letter => !usedSpecials.has(letter)
+    );
+    // if we have available specials & random < 0.125 => pick one special
+    if(availableSpecials.length && Math.random() < 0.125){
+      const special = getRandomElement(availableSpecials);
+      usedSpecials.add(special);
+      selectedConsonants.push(special);
+
+      // If we add Q => ensure we add U
+      if(special === "Q" && !selectedVowels.includes("U")){
+        selectedVowels.push("U");
       }
-      return arr;
+    } else {
+      // pick normal consonant
+      selectedConsonants.push(getRandomElement(normalConsonants));
     }
-    function generateTiles(){
-      let selectedVowels=[];
-      let selectedConsonants=[];
-      let usedSpecials=new Set();
+  }
 
-      // pick 6 consonants total
-      for(let i=0; i<6; i++){
-        const availableSpecials = specialConsonants.filter(letter => !usedSpecials.has(letter));
-        // chance ~12.5% to pick special
-        if(availableSpecials.length && Math.random()<0.125){
-          let special=getRandomElement(availableSpecials);
-          usedSpecials.add(special);
-          selectedConsonants.push(special);
+  // We want 4 vowels total
+  while(selectedVowels.length < 4){
+    const v = getRandomElement(vowels);
+    // if Q => forced 1 U => skip duplicates
+    if(v === "U" && selectedVowels.includes("U")) continue;
+    selectedVowels.push(v);
+  }
 
-          if(special==="Q" && !selectedVowels.includes("U")){
-            selectedVowels.push("U");
-          }
-        } else {
-          // pick normal consonant
-          selectedConsonants.push(getRandomElement(normalConsonants));
-        }
-      }
+  // Combine & shuffle => 10 letters total
+  const tiles = shuffleArray([...selectedVowels, ...selectedConsonants]);
+  return tiles;
+}
+// ================== END UPDATED LETTER CHOICE ====================
 
-      // pick 4 vowels
-      while(selectedVowels.length<4){
-        let v=getRandomElement(vowels);
-        if(v==="U" && selectedVowels.includes("U")) continue; 
-        selectedVowels.push(v);
-      }
-
-      // combine & shuffle
-      let tiles = shuffleArray([...selectedVowels, ...selectedConsonants]);
-      return tiles;
-    }
-
-    /* =========== The rest of your original logic =========== */
+    // 2) Game Vars
     let timeLeft=13, score=0;
     let currentRound=1, currentTask=1;
     const totalRounds=10, totalTasksPerRound=20;
@@ -368,12 +378,11 @@
     let specialCodeCount=0;
     const SPECIAL_CODE_TIMES=2;
 
-    let highestScoringWordThisGame={ word:"", score:0 };
-    let tilesClearedCountThisGame=0;
+    // Additional stats
+    let highestScoringWordThisGame = { word: "", score: 0 };
+    let tilesClearedCountThisGame = 0; // times row is fully used
 
-    const pileContainer=document.getElementById("pile-container");
-    const pileRows=Array.from(pileContainer.children);
-
+    // DOM references
     const activeRow=document.getElementById("active-row");
     const feedback=document.getElementById("feedback");
     const roundDisplay=document.getElementById("current-round");
@@ -387,6 +396,9 @@
     const popupMessage=document.getElementById("popup-message");
     const popupScore=document.getElementById("popup-score");
     const countdownDisplay=document.getElementById("countdown");
+
+    const startupPopup=document.getElementById("startup-popup");
+    const startGameButton=document.getElementById("start-game-button");
 
     const binPopup=document.getElementById("bin-popup");
     const binPopupMessage=document.getElementById("bin-popup-message");
@@ -403,6 +415,7 @@
     const statsHighScore=document.getElementById("stats-high-score");
     const returnNewGameButton=document.getElementById("return-new-game-button");
 
+    // Additional stat elements
     const thisGameBestWord=document.getElementById("this-game-best-word");
     const thisGameBestWordScore=document.getElementById("this-game-best-word-score");
     const thisGameTilesCleared=document.getElementById("this-game-tiles-cleared");
@@ -411,84 +424,54 @@
     const overallBestWordScore=document.getElementById("overall-best-word-score");
     const overallTilesCleared=document.getElementById("overall-tiles-cleared");
 
-    const bonusLetters={J:5,X:5,Q:10,Z:10};
+    const pileContainer=document.getElementById("pile-container");
+    const pileRows=Array.from(pileContainer.children);
 
-    // Dictonary fetch
+    let currentWord="";
+    let selectedTiles=[];
+
+    // bonus letters
+    const bonusLetters={J:5,X:5,Q:10,Z:10};
+    function calculateWordScore(word){
+      let base=word.length*10;
+      let bonus=0;
+      for(let ch of word.toUpperCase()){
+        bonus+=(bonusLetters[ch]||0);
+      }
+      if(word.length===10) bonus+=50;
+      else if(word.length===9) bonus+=40;
+      else if(word.length===8) bonus+=30;
+      else if(word.length===7) bonus+=20;
+      else if(word.length===6) bonus+=10;
+      return base+bonus;
+    }
+
+    // dictionary check
     async function validateWord(word){
       try{
         const resp=await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`);
         return resp.ok;
-      } catch(e){
+      }catch(e){
         console.error("Dictionary fetch error:", e);
         return false;
       }
     }
 
-    function calculateWordScore(word){
-      let base=word.length*10;
-      let extra=0;
-      for(const ch of word.toUpperCase()){
-        extra+=(bonusLetters[ch]||0);
-      }
-      if(word.length===10) extra+=50;
-      else if(word.length===9) extra+=40;
-      else if(word.length===8) extra+=30;
-      else if(word.length===7) extra+=20;
-      else if(word.length===6) extra+=10;
-      return base+extra;
-    }
-
-    // load/save stats
+    // Overall stats in localStorage
     function loadOverallStats(){
       let data=localStorage.getItem("overallStats");
       if(data) return JSON.parse(data);
       return {
-        highScore:0,
-        highestScoringWord:{ word:"", score:0},
-        tilesCleared:0
+        highScore: 0,
+        highestScoringWord: { word: "", score: 0 },
+        tilesCleared: 0
       };
     }
-    function saveOverallStats(s){
-      localStorage.setItem("overallStats", JSON.stringify(s));
+    function saveOverallStats(stats){
+      localStorage.setItem("overallStats", JSON.stringify(stats));
     }
 
-    // resetGame => called once user hits "Start"
-    function resetGame(){
-      score=0;
-      const bestScore=parseInt(localStorage.getItem("bestScore")||"0");
-      highScoreDisplay.textContent=bestScore>0 ? bestScore:"000";
-
-      currentRound=1;
-      currentTask=1;
-      timeLeft=14-currentRound;
-      if(timeLeft<1) timeLeft=1;
-
-      highestScoringWordThisGame={ word:"", score:0 };
-      tilesClearedCountThisGame=0;
-
-      roundDisplay.textContent=currentRound;
-      taskDisplay.textContent=currentTask;
-      updateScore();
-
-      // Clear bin
-      pileRows.forEach(r=>{
-        r.innerHTML="";
-        r.classList.add("empty");
-      });
-      isBinClearingPhase=false;
-      binPointsChange=0;
-      binLettersRemoved=0;
-      specialCodeCount=0;
-
-      activeRow.style.display='flex';
-      // Display first row
-      addRow();
-      // start the timer
-      startTimer();
-
-      feedback.textContent="";
-    }
-
+    // Timer
     function startTimer(){
       clearInterval(timerInterval);
       timeDisplay.textContent=timeLeft;
@@ -498,32 +481,416 @@
       timeLeft--;
       timeDisplay.textContent=timeLeft;
       if(timeLeft<=0){
-        if(isBinClearingPhase) endBinClearingPhase();
-        else endTurn();
+        if(isBinClearingPhase){
+          endBinClearingPhase();
+        } else {
+          endTurn();
+        }
       }
     }
 
+    // Rounds/Tasks
+    function addRow(){
+      activeRow.innerHTML="";
+      let letters=generateTiles();
+      letters.forEach(letter=>{
+        let div=document.createElement("div");
+        div.classList.add("letter","active");
+        div.textContent=letter;
+        activeRow.appendChild(div);
+      });
+    }
+    function endTurn(){
+      moveUnusedToPile();
+      resetCurrentWord();
+      currentTask++;
+      if(currentTask>totalTasksPerRound){
+        endRound();
+      } else {
+        taskDisplay.textContent=currentTask;
+        timeLeft=14-currentRound;
+        if(timeLeft<1) timeLeft=1;
+        addRow();
+        startTimer();
+        checkGameOver();
+      }
+    }
+    function endRound(){
+      clearInterval(timerInterval);
+      let roundBonus=40+(currentRound*10);
+      score+=roundBonus;
+      updateScore();
+      showPopupAfterRound(`Congratulations on completing Round ${currentRound}! +${roundBonus} bonus`);
+    }
+    function showPopupAfterRound(msg){
+      popupMessage.textContent=msg;
+      popupScore.textContent=score;
+      let countdown=5;
+      countdownDisplay.textContent=`Bin clearing in ${countdown}...`;
+      popup.style.display="flex";
+      const interval=setInterval(()=>{
+        countdown--;
+        countdownDisplay.textContent=`Bin clearing in ${countdown}...`;
+        if(countdown<=0){
+          clearInterval(interval);
+          popup.style.display="none";
+          startBinClearingPhase();
+        }
+      },1000);
+    }
+    function startNextRound(){
+      currentRound++;
+      if(currentRound>totalRounds){
+        gameOver();
+        return;
+      }
+      roundDisplay.textContent=currentRound;
+      currentTask=1;
+      taskDisplay.textContent=currentTask;
+      timeLeft=14-currentRound;
+      if(timeLeft<1) timeLeft=1;
+      isBinClearingPhase=false;
+      activeRow.style.display='flex';
+      addRow();
+      startTimer();
+      feedback.textContent="";
+    }
+
+    // Bin clearing
+    function startBinClearingPhase(){
+      isBinClearingPhase=true;
+      binPointsChange=0;
+      binLettersRemoved=0;
+      timeLeft=30;
+      timeDisplay.textContent=timeLeft;
+      feedback.textContent="Bin-Clearing Phase!";
+      activeRow.style.display='none';
+      startTimer();
+      pileContainer.addEventListener("click", binClickHandler);
+    }
+    function endBinClearingPhase(){
+      isBinClearingPhase=false;
+      pileContainer.removeEventListener("click", binClickHandler);
+      resetCurrentWord();
+      feedback.textContent="";
+      showBinClearingResults();
+    }
+    function showBinClearingResults(){
+      binPopupMessage.textContent="Bin Clearing Done!";
+      binPopupDetails.textContent=`You earned ${binPointsChange} bin points, removed ${binLettersRemoved} letters.\nRound ${currentRound+1} next!`;
+      binPopup.style.display="flex";
+      let countdown=10;
+      binPopupCountdown.textContent=`Starting next round in ${countdown}...`;
+      const interval=setInterval(()=>{
+        countdown--;
+        binPopupCountdown.textContent=`Starting next round in ${countdown}...`;
+        if(countdown<=0){
+          clearInterval(interval);
+          binPopup.style.display="none";
+          checkGameOver();
+          startNextRound();
+        }
+      },1000);
+    }
+
+    // SHIFT => BIN
+    function moveUnusedToPile(){
+      let unused=Array.from(activeRow.children).filter(t=>!t.classList.contains("selected"));
+      addToPile(unused);
+      activeRow.innerHTML="";
+    }
+    function addToPile(tiles){
+      tiles.forEach(tile=>{
+        for(let rowIndex=0;rowIndex<10;rowIndex++){
+          if(pileRows[rowIndex].children.length<10){
+            let copy=tile.cloneNode(true);
+            copy.classList.remove("active");
+            copy.classList.add("pile");
+            pileRows[rowIndex].classList.remove("empty");
+            pileRows[rowIndex].appendChild(copy);
+            checkGameOver();
+            break;
+          }
+        }
+      });
+    }
+
+    // GAME OVER
+    function gameOver(){
+      clearInterval(timerInterval);
+      finalScoreSpan.textContent=score;
+      gameOverPopup.style.display="flex";
+    }
+    function checkGameOver(){
+      let isFull=pileRows.every(row=> row.children.length>=10);
+      if(isFull){
+        gameOver();
+      }
+    }
+
+    // ROW CLEARED
+    function checkIfRowCleared(){
+      if(!activeRow.children.length){
+        score+=30;
+        updateScore();
+        showFeedback("Row Cleared! +30 points!", "correct");
+        // Additional: increment "tiles cleared"
+        tilesClearedCountThisGame++;
+      }
+    }
+
+    // CHEAT CODE
+    function checkSpecialCode(){
+      if(isBinClearingPhase)return false;
+      if(currentWord.length===2){
+        let rowLetters=Array.from(activeRow.children).map(t=>t.textContent);
+        if(rowLetters.length>=2){
+          let firstL=rowLetters[0];
+          let lastL=rowLetters[rowLetters.length-1];
+          return currentWord.toUpperCase()===(firstL+lastL).toUpperCase();
+        }
+      }
+      return false;
+    }
+
+    // UTILS
+    function resetCurrentWord(){
+      currentWord="";
+      wordDisplay.textContent="";
+      deselectTiles();
+    }
+    function deselectTiles(){
+      selectedTiles.forEach(t=> t.classList.remove("selected"));
+      selectedTiles=[];
+    }
+    function clearSelectedTiles(){
+      selectedTiles.forEach(t=> t.remove());
+      selectedTiles=[];
+    }
+    function removeSelectedTilesFromPile(){
+      selectedTiles.forEach(t=>{
+        let parent=t.parentElement;
+        t.remove();
+        if(parent.children.length===0){
+          parent.classList.add("empty");
+        }
+      });
+      selectedTiles=[];
+    }
+    function showFeedback(msg,type){
+      feedback.textContent=msg;
+      feedback.className=type;
+      setTimeout(()=> feedback.textContent="",2000);
+    }
+    function updateScore(){
+      scoreDisplay.textContent=score;
+      // Compare with bestScore in localStorage
+      let bestScore = parseInt(localStorage.getItem("bestScore")||"0");
+      if(score>bestScore){
+        bestScore=score;
+        localStorage.setItem("bestScore", bestScore);
+      }
+      highScoreDisplay.textContent = bestScore>0 ? bestScore : "000";
+    }
+
+    // Enter: validate + track highest scoring word
     document.getElementById("enter-button").addEventListener("click", async ()=>{
-      // logic for word validation, bin clearing, etc.
-      // unchanged from your code
-      // ...
+      if(currentWord.length<3){
+        showFeedback("Invalid Word","invalid");
+        deselectTiles();
+        specialCodeCount=0;
+        resetCurrentWord();
+        return;
+      }
+      if(isBinClearingPhase){
+        let valid=await validateWord(currentWord);
+        if(!valid){
+          showFeedback("Invalid Word (dictionary says no)", "invalid");
+          deselectTiles();
+          resetCurrentWord();
+          return;
+        }
+        let pts=calculateWordScore(currentWord);
+        let binPts=Math.floor(pts*0.25);
+        score+=binPts;
+        binPointsChange+=binPts;
+        binLettersRemoved+=selectedTiles.length;
+        updateScore();
+        showFeedback(`Word Accepted! +${binPts} points`, "correct");
+        removeSelectedTilesFromPile();
+      } else {
+        // Normal mode
+        if(checkSpecialCode()){
+          specialCodeCount++;
+          if(specialCodeCount>=SPECIAL_CODE_TIMES){
+            showFeedback("Cheat Triggered! End Round", "correct");
+            endRound();
+            resetCurrentWord();
+            return;
+          }
+        } else {
+          specialCodeCount=0;
+        }
+        let valid=await validateWord(currentWord);
+        if(!valid){
+          showFeedback("Invalid Word (dictionary says no)", "invalid");
+          deselectTiles();
+          resetCurrentWord();
+          return;
+        }
+        let wordScore=calculateWordScore(currentWord);
+        score+=wordScore;
+        updateScore();
+
+        // Check highest scoring word for this game
+        if(wordScore > highestScoringWordThisGame.score){
+          highestScoringWordThisGame.word = currentWord;
+          highestScoringWordThisGame.score = wordScore;
+        }
+
+        showFeedback(`Correct! +${wordScore} points`, "correct");
+        clearSelectedTiles();
+        checkIfRowCleared();
+      }
+      resetCurrentWord();
     });
 
-    // newGame, showStats, etc.
+    // BIN & ACTIVE ROW
+    function binClickHandler(e){
+      if(e.target.classList.contains("letter") && e.target.classList.contains("pile")){
+        let tile=e.target;
+        if(tile.classList.contains("selected")){
+          if(selectedTiles[selectedTiles.length-1]===tile){
+            currentWord=currentWord.slice(0,-1);
+            wordDisplay.textContent=currentWord;
+            tile.classList.remove("selected");
+            selectedTiles.pop();
+          }
+        } else {
+          currentWord+=tile.textContent;
+          wordDisplay.textContent=currentWord;
+          tile.classList.add("selected");
+          selectedTiles.push(tile);
+        }
+      }
+    }
+    activeRow.addEventListener("click",(e)=>{
+      if(isBinClearingPhase)return;
+      if(e.target.classList.contains("letter") && e.target.classList.contains("active")){
+        let tile=e.target;
+        if(tile.classList.contains("selected")){
+          if(selectedTiles[selectedTiles.length-1]===tile){
+            currentWord=currentWord.slice(0,-1);
+            wordDisplay.textContent=currentWord;
+            tile.classList.remove("selected");
+            selectedTiles.pop();
+          }
+        } else {
+          currentWord+=tile.textContent;
+          wordDisplay.textContent=currentWord;
+          tile.classList.add("selected");
+          selectedTiles.push(tile);
+        }
+      }
+    });
+
+    // STARTUP & RESET
+    function resetGame(){
+      score=0;
+      // Load bestScore for the HUD
+      let bestScore = parseInt(localStorage.getItem("bestScore")||"0");
+      highScoreDisplay.textContent = bestScore>0 ? bestScore : "000";
+
+      currentRound=1;
+      currentTask=1;
+      timeLeft=14-currentRound;
+      if(timeLeft<1) timeLeft=1;
+
+      // Reset "this game" stats
+      highestScoringWordThisGame = { word:"", score:0 };
+      tilesClearedCountThisGame = 0;
+
+      roundDisplay.textContent=currentRound;
+      taskDisplay.textContent=currentTask;
+      updateScore();
+
+      // Clear bin
+      pileRows.forEach(row=>{
+        row.innerHTML="";
+        row.classList.add("empty");
+      });
+      isBinClearingPhase=false;
+      binPointsChange=0;
+      binLettersRemoved=0;
+      specialCodeCount=0;
+
+      activeRow.style.display='flex';
+      addRow();
+      startTimer();
+      feedback.textContent="";
+    }
+
+    // Start button => hide popup, reset game
+    document.getElementById("start-game-button").addEventListener("click", ()=>{
+      startupPopup.style.display="none";
+      resetGame();
+    });
+
+    // GAME OVER => new game or stats
     newGameButton.addEventListener("click", ()=>{
       gameOverPopup.style.display="none";
       resetGame();
     });
     showStatsButton.addEventListener("click", ()=>{
       gameOverPopup.style.display="none";
-      endGameStatsFlow();
+      endGameStatsFlow(); // then show the stats
     });
+
+    // Overal stats => localStorage
+    function endGameStatsFlow(){
+      // 1) load existing
+      let overall=loadOverallStats();
+      // 2) highScore
+      if(score>overall.highScore){
+        overall.highScore=score;
+      }
+      // 3) highest scoring word
+      if(highestScoringWordThisGame.score>overall.highestScoringWord.score){
+        overall.highestScoringWord={
+          word: highestScoringWordThisGame.word,
+          score: highestScoringWordThisGame.score
+        };
+      }
+      // 4) total tiles cleared
+      overall.tilesCleared += tilesClearedCountThisGame;
+      // 5) save
+      saveOverallStats(overall);
+
+      showStatsPage(overall);
+    }
+
+    // Show stats page => This Game + Overall
+    function showStatsPage(overall){
+      // This game
+      statsFinalScore.textContent = score;
+      thisGameBestWord.textContent = highestScoringWordThisGame.word || "N/A";
+      thisGameBestWordScore.textContent = highestScoringWordThisGame.score;
+      thisGameTilesCleared.textContent = tilesClearedCountThisGame;
+
+      // Overall
+      statsHighScore.textContent = overall.highScore;
+      overallBestWord.textContent = overall.highestScoringWord.word || "N/A";
+      overallBestWordScore.textContent = overall.highestScoringWord.score;
+      overallTilesCleared.textContent = overall.tilesCleared;
+
+      statsPage.style.display="flex";
+    }
+
+    // Return new game from stats
     returnNewGameButton.addEventListener("click", ()=>{
       statsPage.style.display="none";
       resetGame();
     });
-
-    // rest of your unchanged logic...
   </script>
 </body>
 </html>
