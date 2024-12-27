@@ -68,17 +68,17 @@
       margin: 1vw;
     }
     .letter.active {
-      background-color: #4caf50;
+      background-color: #4caf50; /* Green for active row */
     }
     .letter.pile {
-      background-color: #888;
+      background-color: #888;    /* Gray for bin letters */
     }
     .letter.selected {
       background-color: #ffa500;
     }
     #pile-container {
       display: flex;
-      flex-direction: column-reverse;
+      flex-direction: column-reverse; /* fill from bottom up */
       border: 2px solid #333;
       width: 90vw;
       height: 60vh;
@@ -123,33 +123,43 @@
       flex-direction: column;
       align-items: center;
     }
-    #startup-popup {
-      display: none;
+
+    /* Popups */
+    #popup, #startup-popup, #bin-popup, #game-over-popup, #stats-page {
       position: fixed;
-      top: 0;
+      top: 0; 
       left: 0;
-      width: 100%;
+      width: 100%; 
       height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
+      background-color: rgba(0,0,0,0.5);
+      display: none;
       align-items: center;
       justify-content: center;
       z-index: 1000;
     }
-    #startup-popup-content {
+    #popup-content, #startup-popup-content, #bin-popup-content, 
+    #game-over-content, #stats-content {
       background-color: white;
       padding: 5vw;
       border-radius: 2vw;
       text-align: center;
       max-width: 90vw;
     }
-    #startup-popup h2 {
+    #popup h2, #startup-popup h2, #bin-popup h2, 
+    #game-over-popup h2, #stats-page h2 {
       margin-top: 0;
       font-size: 5vw;
     }
-    #startup-popup p {
+    #popup p, #startup-popup p, #bin-popup p, 
+    #game-over-popup p, #stats-page p {
       font-size: 4vw;
     }
-    #start-game-button {
+    #countdown {
+      font-size: 6vw;
+      margin-top: 4vw;
+    }
+    #start-game-button, #new-game-button, #show-stats-button, 
+    #return-new-game-button {
       font-size: 4vw;
       padding: 3vw 6vw;
       margin-top: 3vw;
@@ -164,6 +174,7 @@
 <body>
   <h1>Ana's Word Cascade Game</h1>
 
+  <!-- HUD (score, high score, etc.) -->
   <div id="hud-container">
     <div id="round-task-line" class="hud-line">
       Round: <span id="current-round">1</span>/10 &nbsp;|&nbsp; 
@@ -174,7 +185,9 @@
       Score: <span id="score-value">0</span> &nbsp;|&nbsp;
       High Score: <span id="high-score-display">000</span>
     </div>
-    <div id="word-display"><span id="current-word"></span></div>
+    <div id="word-display">
+      <span id="current-word"></span>
+    </div>
   </div>
 
   <div id="game-container">
@@ -185,6 +198,7 @@
     </div>
   </div>
 
+  <!-- Bin container -->
   <div id="pile-container">
     <div class="pile-row empty"></div>
     <div class="pile-row empty"></div>
@@ -198,71 +212,638 @@
     <div class="pile-row empty"></div>
   </div>
 
+  <!-- End-of-round popup -->
+  <div id="popup">
+    <div id="popup-content">
+      <h2 id="popup-message"></h2>
+      <p>Current Score: <span id="popup-score"></span></p>
+      <div id="countdown"></div>
+    </div>
+  </div>
+
+  <!-- Bin clearing popup -->
+  <div id="bin-popup">
+    <div id="bin-popup-content">
+      <h2 id="bin-popup-message"></h2>
+      <p id="bin-popup-details"></p>
+      <div id="bin-popup-countdown"></div>
+    </div>
+  </div>
+
+  <!-- Startup popup => NEW TEXT -->
+  <div id="startup-popup" style="display:none;">
+    <div id="startup-popup-content">
+      <h2><strong>Welcome to Ana's Word Cascade Game</strong></h2>
+      
+      <p><strong>How to Play</strong></p>
+      <p>
+        1. <strong>Tasks</strong>: Each task provides 10 random letters and a limited time to form valid words.<br>
+        2. <strong>Bin</strong>: Unused letters from each task move into the Bin.<br>
+        3. <strong>Rounds</strong>: Each round has 20 tasks.<br>
+        4. <strong>Bin Clearing</strong>: After all tasks in a round, you get 30 seconds to remove letters from the Bin.<br>
+        5. <strong>Game Over</strong>: If the Bin ever fills completely, the game ends immediately.
+      </p>
+
+      <p><strong>Scoring</strong></p>
+      <p>
+        • <strong>Base Points</strong>: Each valid word earns 10 points per letter.<br>
+        • <strong>Bonus Letters</strong>: Certain letters (e.g., J, X, Q, Z) add extra points.<br>
+        • <strong>Long Word Bonuses</strong>: Longer words (7 letters or more) give additional bonus points.<br>
+        • <strong>Bin Clearing</strong>: Words formed during bin clearing are typically worth a percentage (e.g., 25%) of their normal value.<br>
+        • <strong>Row Clear</strong>: Completely using all 10 letters in a task can earn an extra reward.
+      </p>
+
+      <p>Click "Start" to begin!</p>
+      <button id="start-game-button">Start</button>
+    </div>
+  </div>
+
+  <!-- Game Over popup => 2 Buttons: New Game or Stats -->
+  <div id="game-over-popup">
+    <div id="game-over-content">
+      <h2>Game Over!</h2>
+      <p>Final Score: <span id="final-score"></span></p>
+      <button id="new-game-button">New Game</button>
+      <button id="show-stats-button">Stats</button>
+    </div>
+  </div>
+
+  <!-- Stats Page => "This Game" and "Overall" stats -->
+  <div id="stats-page">
+    <div id="stats-content">
+      <h2>Stats</h2>
+
+      <h3>This Game</h3>
+      <p>Score: <span id="stats-final-score"></span></p>
+      <p>Highest Scoring Word: 
+        <span id="this-game-best-word"></span> 
+        (<span id="this-game-best-word-score"></span> pts)
+      </p>
+      <p>Tiles Cleared: <span id="this-game-tiles-cleared"></span></p>
+
+      <h3>Overall</h3>
+      <p>High Score: <span id="stats-high-score"></span></p>
+      <p>Highest Scoring Word: 
+        <span id="overall-best-word"></span> 
+        (<span id="overall-best-word-score"></span> pts)
+      </p>
+      <p>Tiles Cleared: <span id="overall-tiles-cleared"></span></p>
+
+      <button id="return-new-game-button">New Game</button>
+    </div>
+  </div>
+
   <script>
-    const vowels = ["A", "E", "I", "O", "U"];
+    // Show the startup popup once DOM is ready
+    document.addEventListener("DOMContentLoaded", ()=>{
+      document.getElementById("startup-popup").style.display="flex";
+    });
+
+    // 1) Random Tiles
+    const vowels = ["A","E","I","O","U"];
     const consonants = "BCDFGHJKLMNPQRSTVWXYZ".split("");
-    const specialLetters = ["Q", "Z", "J", "X"];
-
-    function getRandomElement(array) {
-      return array[Math.floor(Math.random() * array.length)];
+    function getRandomElement(array){
+      return array[Math.floor(Math.random()*array.length)];
     }
-
-    function shuffleArray(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
+    function shuffleArray(array){
+      for(let i=array.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [array[i], array[j]]=[array[j], array[i]];
       }
       return array;
     }
-
-    function generateTiles() {
-      let selectedVowels = [];
-      let selectedConsonants = [];
-      let usedSpecials = new Set();
-
-      // Add special letters to consonants, ensuring only one of Q, Z, J, X
-      for (let i = 0; i < 4; i++) {
-        const availableSpecials = specialLetters.filter(
-          (letter) => !usedSpecials.has(letter)
-        );
-
-        // Add one special letter randomly if available
-        if (availableSpecials.length && Math.random() < 0.125) {
-          const special = getRandomElement(availableSpecials);
-          selectedConsonants.push(special);
-          usedSpecials.add(special);
-
-          // Add U if Q is included
-          if (special === "Q" && !selectedVowels.includes("U")) {
-            selectedVowels.push("U");
-          }
-        } else {
-          selectedConsonants.push(getRandomElement(consonants));
-        }
-      }
-
-      // Fill remaining vowels
-      while (selectedVowels.length < 4) {
-        const vowel = getRandomElement(vowels);
-        if (vowel !== "U" || !selectedVowels.includes("U")) {
-          selectedVowels.push(vowel);
-        }
-      }
-
-      // Fill remaining consonants
-      while (selectedConsonants.length < 4) {
-        const consonant = getRandomElement(consonants);
-        if (!specialLetters.includes(consonant) || !usedSpecials.has(consonant)) {
-          selectedConsonants.push(consonant);
-        }
-      }
-
-      // Combine vowels and consonants, shuffle, and return
-      const tiles = shuffleArray([...selectedVowels, ...selectedConsonants]);
+    function generateTiles(){
+      let tiles=[
+        ...Array(6).fill(null).map(()=> getRandomElement(consonants)),
+        ...Array(4).fill(null).map(()=> getRandomElement(vowels))
+      ];
+      shuffleArray(tiles);
       return tiles;
     }
 
-    console.log(generateTiles());
+    // 2) Game Vars
+    let timeLeft=13, score=0;
+    let currentRound=1, currentTask=1;
+    const totalRounds=10, totalTasksPerRound=20;
+    let timerInterval;
+    let isBinClearingPhase=false;
+    let binPointsChange=0, binLettersRemoved=0;
+    let specialCodeCount=0;
+    const SPECIAL_CODE_TIMES=2;
+
+    // Additional stats
+    let highestScoringWordThisGame = { word: "", score: 0 };
+    let tilesClearedCountThisGame = 0; // times row is fully used
+
+    // DOM references
+    const activeRow=document.getElementById("active-row");
+    const feedback=document.getElementById("feedback");
+    const roundDisplay=document.getElementById("current-round");
+    const taskDisplay=document.getElementById("current-task");
+    const timeDisplay=document.getElementById("time");
+    const scoreDisplay=document.getElementById("score-value");
+    const wordDisplay=document.getElementById("current-word");
+    const highScoreDisplay=document.getElementById("high-score-display");
+
+    const popup=document.getElementById("popup");
+    const popupMessage=document.getElementById("popup-message");
+    const popupScore=document.getElementById("popup-score");
+    const countdownDisplay=document.getElementById("countdown");
+
+    const startupPopup=document.getElementById("startup-popup");
+    const startGameButton=document.getElementById("start-game-button");
+
+    const binPopup=document.getElementById("bin-popup");
+    const binPopupMessage=document.getElementById("bin-popup-message");
+    const binPopupDetails=document.getElementById("bin-popup-details");
+    const binPopupCountdown=document.getElementById("bin-popup-countdown");
+
+    const gameOverPopup=document.getElementById("game-over-popup");
+    const finalScoreSpan=document.getElementById("final-score");
+    const newGameButton=document.getElementById("new-game-button");
+    const showStatsButton=document.getElementById("show-stats-button");
+
+    const statsPage=document.getElementById("stats-page");
+    const statsFinalScore=document.getElementById("stats-final-score");
+    const statsHighScore=document.getElementById("stats-high-score");
+    const returnNewGameButton=document.getElementById("return-new-game-button");
+
+    // Additional stat elements
+    const thisGameBestWord=document.getElementById("this-game-best-word");
+    const thisGameBestWordScore=document.getElementById("this-game-best-word-score");
+    const thisGameTilesCleared=document.getElementById("this-game-tiles-cleared");
+
+    const overallBestWord=document.getElementById("overall-best-word");
+    const overallBestWordScore=document.getElementById("overall-best-word-score");
+    const overallTilesCleared=document.getElementById("overall-tiles-cleared");
+
+    const pileContainer=document.getElementById("pile-container");
+    const pileRows=Array.from(pileContainer.children);
+
+    let currentWord="";
+    let selectedTiles=[];
+
+    // bonus letters
+    const bonusLetters={J:5,X:5,Q:10,Z:10};
+    function calculateWordScore(word){
+      let base=word.length*10;
+      let bonus=0;
+      for(let ch of word.toUpperCase()){
+        bonus+=(bonusLetters[ch]||0);
+      }
+      if(word.length===10) bonus+=50;
+      else if(word.length===9) bonus+=40;
+      else if(word.length===8) bonus+=30;
+      else if(word.length===7) bonus+=20;
+      else if(word.length===6) bonus+=10;
+      return base+bonus;
+    }
+
+    // dictionary check
+    async function validateWord(word){
+      try{
+        const resp=await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`);
+        return resp.ok;
+      }catch(e){
+        console.error("Dictionary fetch error:", e);
+        return false;
+      }
+    }
+
+    // Overall stats in localStorage
+    function loadOverallStats(){
+      let data=localStorage.getItem("overallStats");
+      if(data) return JSON.parse(data);
+      return {
+        highScore: 0,
+        highestScoringWord: { word: "", score: 0 },
+        tilesCleared: 0
+      };
+    }
+    function saveOverallStats(stats){
+      localStorage.setItem("overallStats", JSON.stringify(stats));
+    }
+
+    // Timer
+    function startTimer(){
+      clearInterval(timerInterval);
+      timeDisplay.textContent=timeLeft;
+      timerInterval=setInterval(updateTimer,1000);
+    }
+    function updateTimer(){
+      timeLeft--;
+      timeDisplay.textContent=timeLeft;
+      if(timeLeft<=0){
+        if(isBinClearingPhase){
+          endBinClearingPhase();
+        } else {
+          endTurn();
+        }
+      }
+    }
+
+    // Rounds/Tasks
+    function addRow(){
+      activeRow.innerHTML="";
+      let letters=generateTiles();
+      letters.forEach(letter=>{
+        let div=document.createElement("div");
+        div.classList.add("letter","active");
+        div.textContent=letter;
+        activeRow.appendChild(div);
+      });
+    }
+    function endTurn(){
+      moveUnusedToPile();
+      resetCurrentWord();
+      currentTask++;
+      if(currentTask>totalTasksPerRound){
+        endRound();
+      } else {
+        taskDisplay.textContent=currentTask;
+        timeLeft=14-currentRound;
+        if(timeLeft<1) timeLeft=1;
+        addRow();
+        startTimer();
+        checkGameOver();
+      }
+    }
+    function endRound(){
+      clearInterval(timerInterval);
+      let roundBonus=40+(currentRound*10);
+      score+=roundBonus;
+      updateScore();
+      showPopupAfterRound(`Congratulations on completing Round ${currentRound}! +${roundBonus} bonus`);
+    }
+    function showPopupAfterRound(msg){
+      popupMessage.textContent=msg;
+      popupScore.textContent=score;
+      let countdown=5;
+      countdownDisplay.textContent=`Bin clearing in ${countdown}...`;
+      popup.style.display="flex";
+      const interval=setInterval(()=>{
+        countdown--;
+        countdownDisplay.textContent=`Bin clearing in ${countdown}...`;
+        if(countdown<=0){
+          clearInterval(interval);
+          popup.style.display="none";
+          startBinClearingPhase();
+        }
+      },1000);
+    }
+    function startNextRound(){
+      currentRound++;
+      if(currentRound>totalRounds){
+        gameOver();
+        return;
+      }
+      roundDisplay.textContent=currentRound;
+      currentTask=1;
+      taskDisplay.textContent=currentTask;
+      timeLeft=14-currentRound;
+      if(timeLeft<1) timeLeft=1;
+      isBinClearingPhase=false;
+      activeRow.style.display='flex';
+      addRow();
+      startTimer();
+      feedback.textContent="";
+    }
+
+    // Bin clearing
+    function startBinClearingPhase(){
+      isBinClearingPhase=true;
+      binPointsChange=0;
+      binLettersRemoved=0;
+      timeLeft=30;
+      timeDisplay.textContent=timeLeft;
+      feedback.textContent="Bin-Clearing Phase!";
+      activeRow.style.display='none';
+      startTimer();
+      pileContainer.addEventListener("click", binClickHandler);
+    }
+    function endBinClearingPhase(){
+      isBinClearingPhase=false;
+      pileContainer.removeEventListener("click", binClickHandler);
+      resetCurrentWord();
+      feedback.textContent="";
+      showBinClearingResults();
+    }
+    function showBinClearingResults(){
+      binPopupMessage.textContent="Bin Clearing Done!";
+      binPopupDetails.textContent=`You earned ${binPointsChange} bin points, removed ${binLettersRemoved} letters.\nRound ${currentRound+1} next!`;
+      binPopup.style.display="flex";
+      let countdown=10;
+      binPopupCountdown.textContent=`Starting next round in ${countdown}...`;
+      const interval=setInterval(()=>{
+        countdown--;
+        binPopupCountdown.textContent=`Starting next round in ${countdown}...`;
+        if(countdown<=0){
+          clearInterval(interval);
+          binPopup.style.display="none";
+          checkGameOver();
+          startNextRound();
+        }
+      },1000);
+    }
+
+    // SHIFT => BIN
+    function moveUnusedToPile(){
+      let unused=Array.from(activeRow.children).filter(t=>!t.classList.contains("selected"));
+      addToPile(unused);
+      activeRow.innerHTML="";
+    }
+    function addToPile(tiles){
+      tiles.forEach(tile=>{
+        for(let rowIndex=0;rowIndex<10;rowIndex++){
+          if(pileRows[rowIndex].children.length<10){
+            let copy=tile.cloneNode(true);
+            copy.classList.remove("active");
+            copy.classList.add("pile");
+            pileRows[rowIndex].classList.remove("empty");
+            pileRows[rowIndex].appendChild(copy);
+            checkGameOver();
+            break;
+          }
+        }
+      });
+    }
+
+    // GAME OVER
+    function gameOver(){
+      clearInterval(timerInterval);
+      finalScoreSpan.textContent=score;
+      gameOverPopup.style.display="flex";
+    }
+    function checkGameOver(){
+      let isFull=pileRows.every(row=> row.children.length>=10);
+      if(isFull){
+        gameOver();
+      }
+    }
+
+    // ROW CLEARED
+    function checkIfRowCleared(){
+      if(!activeRow.children.length){
+        score+=30;
+        updateScore();
+        showFeedback("Row Cleared! +30 points!", "correct");
+        // Additional: increment "tiles cleared"
+        tilesClearedCountThisGame++;
+      }
+    }
+
+    // CHEAT CODE
+    function checkSpecialCode(){
+      if(isBinClearingPhase)return false;
+      if(currentWord.length===2){
+        let rowLetters=Array.from(activeRow.children).map(t=>t.textContent);
+        if(rowLetters.length>=2){
+          let firstL=rowLetters[0];
+          let lastL=rowLetters[rowLetters.length-1];
+          return currentWord.toUpperCase()===(firstL+lastL).toUpperCase();
+        }
+      }
+      return false;
+    }
+
+    // UTILS
+    function resetCurrentWord(){
+      currentWord="";
+      wordDisplay.textContent="";
+      deselectTiles();
+    }
+    function deselectTiles(){
+      selectedTiles.forEach(t=> t.classList.remove("selected"));
+      selectedTiles=[];
+    }
+    function clearSelectedTiles(){
+      selectedTiles.forEach(t=> t.remove());
+      selectedTiles=[];
+    }
+    function removeSelectedTilesFromPile(){
+      selectedTiles.forEach(t=>{
+        let parent=t.parentElement;
+        t.remove();
+        if(parent.children.length===0){
+          parent.classList.add("empty");
+        }
+      });
+      selectedTiles=[];
+    }
+    function showFeedback(msg,type){
+      feedback.textContent=msg;
+      feedback.className=type;
+      setTimeout(()=> feedback.textContent="",2000);
+    }
+    function updateScore(){
+      scoreDisplay.textContent=score;
+      // Compare with bestScore in localStorage
+      let bestScore = parseInt(localStorage.getItem("bestScore")||"0");
+      if(score>bestScore){
+        bestScore=score;
+        localStorage.setItem("bestScore", bestScore);
+      }
+      highScoreDisplay.textContent = bestScore>0 ? bestScore : "000";
+    }
+
+    // Enter: validate + track highest scoring word
+    document.getElementById("enter-button").addEventListener("click", async ()=>{
+      if(currentWord.length<3){
+        showFeedback("Invalid Word","invalid");
+        deselectTiles();
+        specialCodeCount=0;
+        resetCurrentWord();
+        return;
+      }
+      if(isBinClearingPhase){
+        let valid=await validateWord(currentWord);
+        if(!valid){
+          showFeedback("Invalid Word (dictionary says no)", "invalid");
+          deselectTiles();
+          resetCurrentWord();
+          return;
+        }
+        let pts=calculateWordScore(currentWord);
+        let binPts=Math.floor(pts*0.25);
+        score+=binPts;
+        binPointsChange+=binPts;
+        binLettersRemoved+=selectedTiles.length;
+        updateScore();
+        showFeedback(`Word Accepted! +${binPts} points`, "correct");
+        removeSelectedTilesFromPile();
+      } else {
+        // Normal mode
+        if(checkSpecialCode()){
+          specialCodeCount++;
+          if(specialCodeCount>=SPECIAL_CODE_TIMES){
+            showFeedback("Cheat Triggered! End Round", "correct");
+            endRound();
+            resetCurrentWord();
+            return;
+          }
+        } else {
+          specialCodeCount=0;
+        }
+        let valid=await validateWord(currentWord);
+        if(!valid){
+          showFeedback("Invalid Word (dictionary says no)", "invalid");
+          deselectTiles();
+          resetCurrentWord();
+          return;
+        }
+        let wordScore=calculateWordScore(currentWord);
+        score+=wordScore;
+        updateScore();
+
+        // Check highest scoring word for this game
+        if(wordScore > highestScoringWordThisGame.score){
+          highestScoringWordThisGame.word = currentWord;
+          highestScoringWordThisGame.score = wordScore;
+        }
+
+        showFeedback(`Correct! +${wordScore} points`, "correct");
+        clearSelectedTiles();
+        checkIfRowCleared();
+      }
+      resetCurrentWord();
+    });
+
+    // BIN & ACTIVE ROW
+    function binClickHandler(e){
+      if(e.target.classList.contains("letter") && e.target.classList.contains("pile")){
+        let tile=e.target;
+        if(tile.classList.contains("selected")){
+          if(selectedTiles[selectedTiles.length-1]===tile){
+            currentWord=currentWord.slice(0,-1);
+            wordDisplay.textContent=currentWord;
+            tile.classList.remove("selected");
+            selectedTiles.pop();
+          }
+        } else {
+          currentWord+=tile.textContent;
+          wordDisplay.textContent=currentWord;
+          tile.classList.add("selected");
+          selectedTiles.push(tile);
+        }
+      }
+    }
+    activeRow.addEventListener("click",(e)=>{
+      if(isBinClearingPhase)return;
+      if(e.target.classList.contains("letter") && e.target.classList.contains("active")){
+        let tile=e.target;
+        if(tile.classList.contains("selected")){
+          if(selectedTiles[selectedTiles.length-1]===tile){
+            currentWord=currentWord.slice(0,-1);
+            wordDisplay.textContent=currentWord;
+            tile.classList.remove("selected");
+            selectedTiles.pop();
+          }
+        } else {
+          currentWord+=tile.textContent;
+          wordDisplay.textContent=currentWord;
+          tile.classList.add("selected");
+          selectedTiles.push(tile);
+        }
+      }
+    });
+
+    // STARTUP & RESET
+    function resetGame(){
+      score=0;
+      // Load bestScore for the HUD
+      let bestScore = parseInt(localStorage.getItem("bestScore")||"0");
+      highScoreDisplay.textContent = bestScore>0 ? bestScore : "000";
+
+      currentRound=1;
+      currentTask=1;
+      timeLeft=14-currentRound;
+      if(timeLeft<1) timeLeft=1;
+
+      // Reset "this game" stats
+      highestScoringWordThisGame = { word:"", score:0 };
+      tilesClearedCountThisGame = 0;
+
+      roundDisplay.textContent=currentRound;
+      taskDisplay.textContent=currentTask;
+      updateScore();
+
+      // Clear bin
+      pileRows.forEach(row=>{
+        row.innerHTML="";
+        row.classList.add("empty");
+      });
+      isBinClearingPhase=false;
+      binPointsChange=0;
+      binLettersRemoved=0;
+      specialCodeCount=0;
+
+      activeRow.style.display='flex';
+      addRow();
+      startTimer();
+      feedback.textContent="";
+    }
+
+    // Start button => hide popup, reset game
+    document.getElementById("start-game-button").addEventListener("click", ()=>{
+      startupPopup.style.display="none";
+      resetGame();
+    });
+
+    // GAME OVER => new game or stats
+    newGameButton.addEventListener("click", ()=>{
+      gameOverPopup.style.display="none";
+      resetGame();
+    });
+    showStatsButton.addEventListener("click", ()=>{
+      gameOverPopup.style.display="none";
+      endGameStatsFlow(); // then show the stats
+    });
+
+    // Overal stats => localStorage
+    function endGameStatsFlow(){
+      // 1) load existing
+      let overall=loadOverallStats();
+      // 2) highScore
+      if(score>overall.highScore){
+        overall.highScore=score;
+      }
+      // 3) highest scoring word
+      if(highestScoringWordThisGame.score>overall.highestScoringWord.score){
+        overall.highestScoringWord={
+          word: highestScoringWordThisGame.word,
+          score: highestScoringWordThisGame.score
+        };
+      }
+      // 4) total tiles cleared
+      overall.tilesCleared += tilesClearedCountThisGame;
+      // 5) save
+      saveOverallStats(overall);
+
+      showStatsPage(overall);
+    }
+
+    // Show stats page => This Game + Overall
+    function showStatsPage(overall){
+      // This game
+      statsFinalScore.textContent = score;
+      thisGameBestWord.textContent = highestScoringWordThisGame.word || "N/A";
+      thisGameBestWordScore.textContent = highestScoringWordThisGame.score;
+      thisGameTilesCleared.textContent = tilesClearedCountThisGame;
+
+      // Overall
+      statsHighScore.textContent = overall.highScore;
+      overallBestWord.textContent = overall.highestScoringWord.word || "N/A";
+      overallBestWordScore.textContent = overall.highestScoringWord.score;
+      overallTilesCleared.textContent = overall.tilesCleared;
+
+      statsPage.style.display="flex";
+    }
+
+    // Return new game from stats
+    returnNewGameButton.addEventListener("click", ()=>{
+      statsPage.style.display="none";
+      resetGame();
+    });
   </script>
 </body>
 </html>
